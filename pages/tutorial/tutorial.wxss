@@ -1,0 +1,400 @@
+.tutorial-page {
+  position: relative;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0D0221 0%, #1A0A3E 100%);
+  display: flex;
+  flex-direction: column;
+  padding: 0 48rpx;
+  overflow: hidden;
+}
+
+/* ===== 进度点 ===== */
+.progress-dots {
+  display: flex;
+  justify-content: center;
+  gap: 16rpx;
+  padding-top: 120rpx;
+  margin-bottom: 48rpx;
+}
+
+.dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.dot.active {
+  background: var(--accent-cyan);
+  box-shadow: 0 0 16rpx var(--accent-cyan);
+  transform: scale(1.3);
+}
+
+.dot.done {
+  background: var(--primary-light);
+}
+
+/* ===== 步骤容器 ===== */
+.step-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: stepFadeIn 0.4s ease-out;
+}
+
+@keyframes stepFadeIn {
+  from { opacity: 0; transform: translateY(30rpx); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.step-number {
+  font-size: 24rpx;
+  color: var(--accent-cyan);
+  letter-spacing: 4rpx;
+  margin-bottom: 12rpx;
+  text-transform: uppercase;
+}
+
+.step-title {
+  font-size: 52rpx;
+  font-weight: 700;
+  margin-bottom: 24rpx;
+  background: linear-gradient(135deg, #FFFFFF, var(--accent-cyan));
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.step-desc {
+  font-size: 28rpx;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.7;
+  margin-bottom: 16rpx;
+}
+
+.step-hint {
+  font-size: 24rpx;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ===== 手势演示区 ===== */
+.gesture-demo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 48rpx;
+  gap: 24rpx;
+}
+
+.demo-scene {
+  position: relative;
+  width: 480rpx;
+  height: 320rpx;
+  border-radius: 24rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* 冻结场景 - 雨滴 */
+.freeze-scene {
+  background: linear-gradient(180deg, rgba(20, 30, 60, 0.8), rgba(10, 15, 30, 0.9));
+}
+
+.raindrop {
+  position: absolute;
+  width: 4rpx;
+  height: 24rpx;
+  background: linear-gradient(180deg, transparent, rgba(100, 180, 255, 0.8));
+  border-radius: 2rpx;
+  animation: rainFall 1.2s linear infinite;
+}
+
+.r1 { left: 15%; top: -20rpx; animation-delay: 0s; }
+.r2 { left: 35%; top: -20rpx; animation-delay: 0.3s; }
+.r3 { left: 55%; top: -20rpx; animation-delay: 0.6s; }
+.r4 { left: 72%; top: -20rpx; animation-delay: 0.15s; }
+.r5 { left: 88%; top: -20rpx; animation-delay: 0.45s; }
+
+@keyframes rainFall {
+  from { transform: translateY(0); opacity: 0.8; }
+  to { transform: translateY(340rpx); opacity: 0.2; }
+}
+
+.freeze-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 245, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.freeze-overlay.show {
+  opacity: 1;
+}
+
+.freeze-overlay .freeze-icon {
+  font-size: 64rpx;
+  animation: freezePulse 1s ease-in-out infinite;
+}
+
+.freeze-overlay.show ~ .raindrop {
+  animation-play-state: paused !important;
+}
+
+@keyframes freezePulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+
+/* 倒流场景 - 落叶 */
+.reverse-scene {
+  background: linear-gradient(180deg, rgba(40, 25, 10, 0.6), rgba(20, 15, 5, 0.8));
+}
+
+.leaf {
+  position: absolute;
+  font-size: 28rpx;
+  animation: leafFall 3s ease-in-out infinite;
+}
+
+.leaf::after {
+  content: '🍂';
+}
+
+.l1 { left: 20%; top: 10%; animation-delay: 0s; }
+.l2 { left: 50%; top: 5%; animation-delay: 0.8s; }
+.l3 { left: 75%; top: 15%; animation-delay: 1.5s; }
+
+@keyframes leafFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(280rpx) rotate(180deg); opacity: 0.3; }
+}
+
+.leaf.reverse {
+  animation: leafRise 3s ease-in-out infinite !important;
+}
+
+@keyframes leafRise {
+  0% { transform: translateY(280rpx) rotate(180deg); opacity: 0.3; }
+  100% { transform: translateY(0) rotate(0deg); opacity: 1; }
+}
+
+.reverse-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(123, 47, 190, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.reverse-overlay.show {
+  opacity: 1;
+}
+
+.reverse-overlay .reverse-icon {
+  font-size: 64rpx;
+  animation: reversePulse 0.8s ease-in-out infinite;
+}
+
+@keyframes reversePulse {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.15) rotate(-10deg); }
+}
+
+/* 触碰场景 */
+.touch-scene {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(20, 30, 15, 0.6), rgba(10, 15, 10, 0.8));
+}
+
+.demo-flower {
+  font-size: 80rpx;
+  transition: all 0.5s ease;
+}
+
+.demo-flower.golden {
+  filter: brightness(1.5) sepia(1) hue-rotate(15deg) saturate(3);
+  text-shadow: 0 0 32rpx rgba(255, 215, 0, 0.8);
+}
+
+.demo-ring {
+  position: absolute;
+  width: 240rpx;
+  height: 240rpx;
+  opacity: 0;
+  transform: scale(0.3);
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.demo-ring.show {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.demo-ring-item {
+  position: absolute;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: rgba(13, 2, 33, 0.9);
+  border: 2rpx solid rgba(255, 215, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  box-shadow: 0 0 16rpx rgba(255, 215, 0, 0.3);
+}
+
+.ri1 { top: -28rpx; left: 50%; transform: translateX(-50%); }
+.ri2 { right: -28rpx; top: 50%; transform: translateY(-50%); }
+.ri3 { bottom: -28rpx; left: 50%; transform: translateX(-50%); }
+.ri4 { left: -28rpx; top: 50%; transform: translateY(-50%); }
+
+.demo-sparkle {
+  position: absolute;
+  font-size: 60rpx;
+  opacity: 0;
+  transform: scale(0);
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.demo-sparkle.show {
+  opacity: 1;
+  transform: scale(1);
+  animation: sparkleRotate 1s ease-in-out infinite;
+}
+
+@keyframes sparkleRotate {
+  from { transform: scale(1) rotate(0deg); }
+  to { transform: scale(1.1) rotate(360deg); }
+}
+
+/* 手势演示 */
+.hand-demo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.hand {
+  font-size: 64rpx;
+  transition: all 0.3s ease;
+}
+
+.hand-label {
+  font-size: 22rpx;
+  color: var(--text-muted);
+}
+
+.hand-open {
+  animation: handPush 1.5s ease-in-out infinite;
+}
+
+@keyframes handPush {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.2) translateY(-16rpx); }
+}
+
+.hand-freeze {
+  animation: handHold 1s ease-in-out infinite;
+}
+
+@keyframes handHold {
+  0%, 100% { transform: scale(1.1); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+.hand-press {
+  animation: pressDown 1s ease-in-out infinite;
+}
+
+@keyframes pressDown {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50% { transform: scale(0.9) translateY(8rpx); }
+}
+
+.hand-release {
+  animation: releaseUp 0.8s ease-out;
+}
+
+@keyframes releaseUp {
+  from { transform: scale(0.9) translateY(8rpx); }
+  to { transform: scale(1.1) translateY(-12rpx); }
+}
+
+.hand-point {
+  animation: pointTap 1.2s ease-in-out infinite;
+}
+
+@keyframes pointTap {
+  0%, 100% { transform: scale(1) translateY(0); }
+  30% { transform: scale(0.95) translateY(8rpx); }
+  60% { transform: scale(1) translateY(0); }
+}
+
+.hand-select, .hand-magic {
+  animation: magicGlow 0.8s ease-in-out infinite;
+}
+
+@keyframes magicGlow {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.1); filter: brightness(1.3); }
+}
+
+/* ===== 底部导航 ===== */
+.tutorial-nav {
+  display: flex;
+  align-items: center;
+  padding: 32rpx 0;
+  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+}
+
+.skip-btn {
+  font-size: 28rpx;
+  color: var(--text-muted);
+  padding: 16rpx 24rpx;
+}
+
+.nav-spacer {
+  flex: 1;
+}
+
+.next-btn {
+  background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
+  color: white;
+  border: none;
+  border-radius: 40rpx;
+  padding: 24rpx 64rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  box-shadow: 0 8rpx 32rpx rgba(123, 47, 190, 0.4);
+}
+
+.next-btn::after {
+  border: none;
+}

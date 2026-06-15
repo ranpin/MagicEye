@@ -18,7 +18,12 @@ Page({
     wx.authorize({
       scope: 'scope.camera',
       success: () => {
-        wx.navigateTo({ url: '/pages/magic/magic' })
+        const tutorialDone = wx.getStorageSync('tutorialDone')
+        if (!tutorialDone) {
+          wx.redirectTo({ url: '/pages/tutorial/tutorial' })
+        } else {
+          wx.redirectTo({ url: '/pages/magic/magic' })
+        }
       },
       fail: () => {
         wx.showModal({

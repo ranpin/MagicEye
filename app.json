@@ -1,7 +1,9 @@
 {
   "pages": [
     "pages/index/index",
-    "pages/magic/magic"
+    "pages/magic/magic",
+    "pages/tutorial/tutorial",
+    "pages/settings/settings"
   ],
   "window": {
     "navigationBarBackgroundColor": "#0D0221",

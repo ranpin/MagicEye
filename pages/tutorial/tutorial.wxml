@@ -1,0 +1,103 @@
+<view class="tutorial-page">
+  <!-- 进度指示器 -->
+  <view class="progress-dots">
+    <view
+      wx:for="{{steps}}"
+      wx:key="title"
+      class="dot {{index === currentStep ? 'active' : ''}} {{index < currentStep ? 'done' : ''}}">
+    </view>
+  </view>
+
+  <!-- 步骤内容 -->
+  <view class="step-container">
+    <view wx:if="{{currentStep === 0}}" class="step" key="freeze">
+      <!-- 冻结手势动画 -->
+      <view class="gesture-demo">
+        <view class="demo-scene freeze-scene">
+          <view class="raindrop r1"></view>
+          <view class="raindrop r2"></view>
+          <view class="raindrop r3"></view>
+          <view class="raindrop r4"></view>
+          <view class="raindrop r5"></view>
+          <!-- 冻结覆盖层 -->
+          <view class="freeze-overlay {{stepAnim === 1 ? 'show' : ''}}">
+            <text class="freeze-icon">⏸</text>
+          </view>
+        </view>
+        <!-- 手势演示 -->
+        <view class="hand-demo">
+          <view class="hand {{stepAnim === 0 ? 'hand-open' : 'hand-freeze'}}">✋</view>
+        </view>
+      </view>
+      <text class="step-number">第一课</text>
+      <text class="step-title">时间冻结</text>
+      <text class="step-desc">轻点底部「⏸ 冻结」按钮\n让画面中的一切运动静止</text>
+      <text class="step-hint">雨滴悬停空中，飞鸟定格不动</text>
+    </view>
+
+    <view wx:if="{{currentStep === 1}}" class="step" key="reverse">
+      <!-- 倒流动画 -->
+      <view class="gesture-demo">
+        <view class="demo-scene reverse-scene">
+          <view class="leaf {{stepAnim === 1 ? 'reverse' : ''}} l1"></view>
+          <view class="leaf {{stepAnim === 1 ? 'reverse' : ''}} l2"></view>
+          <view class="leaf {{stepAnim === 1 ? 'reverse' : ''}} l3"></view>
+          <view class="reverse-overlay {{stepAnim === 1 ? 'show' : ''}}">
+            <text class="reverse-icon">⏪</text>
+          </view>
+        </view>
+        <view class="hand-demo">
+          <view class="hand {{stepAnim === 0 ? 'hand-press' : 'hand-release'}}">
+            {{stepAnim === 0 ? '👇' : '✋'}}
+          </view>
+          <text class="hand-label">{{stepAnim === 0 ? '按住' : '松手'}}</text>
+        </view>
+      </view>
+      <text class="step-number">第二课</text>
+      <text class="step-title">时间倒流</text>
+      <text class="step-desc">长按底部「⏪ 倒流」按钮录制\n松手后画面将反向播放</text>
+      <text class="step-hint">落叶飞回枝头，雨滴逆流上升</text>
+    </view>
+
+    <view wx:if="{{currentStep === 2}}" class="step" key="touch">
+      <!-- 触碰动画 -->
+      <view class="gesture-demo">
+        <view class="demo-scene touch-scene">
+          <view class="demo-flower {{stepAnim === 1 ? 'golden' : ''}}">🌸</view>
+          <!-- 魔法环 -->
+          <view class="demo-ring {{stepAnim === 1 ? 'show' : ''}}">
+            <view class="demo-ring-item ri1">🪙</view>
+            <view class="demo-ring-item ri2">💎</view>
+            <view class="demo-ring-item ri3">🔥</view>
+            <view class="demo-ring-item ri4">🌸</view>
+          </view>
+          <view class="demo-sparkle {{stepAnim === 2 ? 'show' : ''}}">✨</view>
+        </view>
+        <view class="hand-demo">
+          <view class="hand {{stepAnim === 0 ? 'hand-point' : stepAnim === 1 ? 'hand-select' : 'hand-magic'}}">
+            {{stepAnim === 0 ? '☝️' : stepAnim === 1 ? '☝️' : '✨'}}
+          </view>
+          <text class="hand-label">{{stepAnim === 0 ? '触碰' : stepAnim === 1 ? '选择' : '施法'}}</text>
+        </view>
+      </view>
+      <text class="step-number">第三课</text>
+      <text class="step-title">点石成金</text>
+      <text class="step-desc">开启「✋ 触碰」模式后轻触画面\n在弹出的魔法环中选择变换效果</text>
+      <text class="step-hint">花朵变金，石头化晶，万物听你号令</text>
+    </view>
+  </view>
+
+  <!-- 底部按钮 -->
+  <view class="tutorial-nav">
+    <text
+      class="skip-btn"
+      bind:tap="onSkip"
+      wx:if="{{currentStep < 2}}">跳过</text>
+    <view class="nav-spacer"></view>
+    <button
+      class="next-btn"
+      bind:tap="onNext">
+      {{currentStep < 2 ? '下一步' : '开始施法'}}
+    </button>
+  </view>
+</view>

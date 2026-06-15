@@ -31,6 +31,9 @@
     <view class="mode-badge {{currentMode}}">
       <text>{{modeText}}</text>
     </view>
+    <view class="settings-btn" bind:tap="onOpenSettings">
+      <text>⚙</text>
+    </view>
   </view>
 
   <!-- 状态提示 -->

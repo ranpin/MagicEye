@@ -1,0 +1,75 @@
+<view class="settings-page">
+  <!-- 头部 Logo -->
+  <view class="header">
+    <text class="header-emoji">👁️</text>
+    <text class="header-title">魔眼 MagicEye</text>
+    <text class="header-version">v0.1.0 MVP</text>
+  </view>
+
+  <!-- 设置列表 -->
+  <view class="settings-group">
+    <text class="group-title">魔法设置</text>
+
+    <view class="setting-item">
+      <text class="setting-label">特效质量</text>
+      <picker
+        mode="selector"
+        range="{{qualityOptions}}"
+        value="{{qualityIndex}}"
+        bind:change="onQualityChange">
+        <view class="setting-value">
+          <text>{{qualityOptions[qualityIndex]}}</text>
+          <text class="arrow">›</text>
+        </view>
+      </picker>
+    </view>
+
+    <view class="setting-item">
+      <text class="setting-label">振动反馈</text>
+      <switch checked="{{vibrationEnabled}}" bind:change="onVibrationChange" color="#00F5FF" />
+    </view>
+
+    <view class="setting-item">
+      <text class="setting-label">拍摄质量</text>
+      <picker
+        mode="selector"
+        range="{{photoQualityOptions}}"
+        value="{{photoQualityIndex}}"
+        bind:change="onPhotoQualityChange">
+        <view class="setting-value">
+          <text>{{photoQualityOptions[photoQualityIndex]}}</text>
+          <text class="arrow">›</text>
+        </view>
+      </picker>
+    </view>
+  </view>
+
+  <view class="settings-group">
+    <text class="group-title">其他</text>
+
+    <view class="setting-item" bind:tap="onReplayTutorial">
+      <text class="setting-label">重新观看引导</text>
+      <text class="arrow">›</text>
+    </view>
+
+    <view class="setting-item" bind:tap="onPrivacy">
+      <text class="setting-label">隐私政策</text>
+      <text class="arrow">›</text>
+    </view>
+
+    <view class="setting-item" bind:tap="onFeedback">
+      <text class="setting-label">反馈与建议</text>
+      <text class="arrow">›</text>
+    </view>
+
+    <view class="setting-item" bind:tap="onAbout">
+      <text class="setting-label">关于魔眼</text>
+      <text class="arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 底部 -->
+  <view class="footer">
+    <text class="footer-text">MagicEye · 让世界成为你的魔法游乐场</text>
+  </view>
+</view>

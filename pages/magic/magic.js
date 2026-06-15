@@ -595,7 +595,10 @@ Page({
   },
 
   _vibrate(type) {
-    wx.vibrateShort({ type: type || 'medium' })
+    const settings = wx.getStorageSync('settings') || {}
+    if (settings.vibrationEnabled !== false) {
+      wx.vibrateShort({ type: type || 'medium' })
+    }
   },
 
   _showToast(text) {
@@ -637,6 +640,10 @@ Page({
       clearInterval(this._energyTimer)
       this._energyTimer = null
     }
+  },
+
+  onOpenSettings() {
+    wx.navigateTo({ url: '/pages/settings/settings' })
   },
 
   onCameraError(e) {

@@ -1,0 +1,70 @@
+Page({
+  data: {
+    qualityOptions: ['低（更流畅）', '中（平衡）', '高（更绚丽）'],
+    qualityIndex: 1,
+    photoQualityOptions: ['标准', '高清'],
+    photoQualityIndex: 1,
+    vibrationEnabled: true
+  },
+
+  onLoad() {
+    const settings = wx.getStorageSync('settings') || {}
+    this.setData({
+      qualityIndex: settings.qualityIndex ?? 1,
+      photoQualityIndex: settings.photoQualityIndex ?? 1,
+      vibrationEnabled: settings.vibrationEnabled !== false
+    })
+  },
+
+  onQualityChange(e) {
+    this.setData({ qualityIndex: parseInt(e.detail.value) })
+    this._saveSettings()
+  },
+
+  onPhotoQualityChange(e) {
+    this.setData({ photoQualityIndex: parseInt(e.detail.value) })
+    this._saveSettings()
+  },
+
+  onVibrationChange(e) {
+    this.setData({ vibrationEnabled: e.detail.value })
+    this._saveSettings()
+  },
+
+  onReplayTutorial() {
+    wx.removeStorageSync('tutorialDone')
+    wx.navigateTo({ url: '/pages/tutorial/tutorial' })
+  },
+
+  onPrivacy() {
+    wx.showModal({
+      title: '隐私政策',
+      content: '魔眼仅在使用期间访问您的摄像头，拍摄和处理的画面不会上传至任何服务器（除非您主动保存）。所有魔法效果均在本地实时渲染。',
+      showCancel: false
+    })
+  },
+
+  onFeedback() {
+    wx.showModal({
+      title: '反馈与建议',
+      content: '如有问题或建议，请在 GitHub 仓库 Issues 中提交：\n\nhttps://github.com/ranpin/MagicEye',
+      showCancel: false
+    })
+  },
+
+  onAbout() {
+    wx.showModal({
+      title: '关于魔眼',
+      content: 'MagicEye (魔眼) v0.1.0\n\n一款增强现实魔法交互工具。\n通过手机摄像头观察世界，用魔法改变一切。\n\n© 2026 MagicEye',
+      showCancel: false
+    })
+  },
+
+  _saveSettings() {
+    wx.setStorageSync('settings', {
+      qualityIndex: this.data.qualityIndex,
+      photoQualityIndex: this.data.photoQualityIndex,
+      vibrationEnabled: this.data.vibrationEnabled
+    })
+  }
+})
