@@ -1,0 +1,53 @@
+<view class="welcome-page">
+  <!-- 背景星空粒子 -->
+  <view class="bg-particles">
+    <view class="particle p1"></view>
+    <view class="particle p2"></view>
+    <view class="particle p3"></view>
+    <view class="particle p4"></view>
+    <view class="particle p5"></view>
+    <view class="particle p6"></view>
+    <view class="particle p7"></view>
+    <view class="particle p8"></view>
+  </view>
+
+  <!-- Logo 区域 -->
+  <view class="logo-section">
+    <view class="logo-orb">
+      <view class="orb-ring"></view>
+      <view class="orb-glow"></view>
+      <text class="logo-emoji">👁️</text>
+    </view>
+    <text class="app-title">魔眼</text>
+    <text class="app-subtitle">MagicEye</text>
+    <text class="app-tagline">世界是你的魔法游乐场</text>
+  </view>
+
+  <!-- 功能预览卡片 -->
+  <view class="feature-cards">
+    <view class="feature-card" bind:animation="{{card1Anim}}">
+      <text class="feature-icon">⏸️</text>
+      <text class="feature-name">时间冻结</text>
+      <text class="feature-desc">冻结画面中的一切运动</text>
+    </view>
+    <view class="feature-card" bind:animation="{{card2Anim}}">
+      <text class="feature-icon">⏪</text>
+      <text class="feature-name">时间倒流</text>
+      <text class="feature-desc">让万物逆向流转</text>
+    </view>
+    <view class="feature-card" bind:animation="{{card3Anim}}">
+      <text class="feature-icon">✋</text>
+      <text class="feature-name">点石成金</text>
+      <text class="feature-desc">触碰物体，施加魔法变换</text>
+    </view>
+  </view>
+
+  <!-- 开始按钮 -->
+  <button class="start-btn" bind:tap="onStart">
+    <text class="start-text">开始施法</text>
+    <text class="start-arrow">→</text>
+  </button>
+
+  <!-- 底部提示 -->
+  <text class="hint">需要摄像头权限以施展魔法</text>
+</view>

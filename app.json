@@ -1,0 +1,23 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/magic/magic"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#0D0221",
+    "navigationBarTitleText": "魔眼",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#0D0221",
+    "backgroundTextStyle": "light"
+  },
+  "permission": {
+    "scope.camera": {
+      "desc": "魔眼需要使用摄像头来施展魔法"
+    }
+  },
+  "requiredPrivateInfos": [
+    "chooseAddress"
+  ],
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

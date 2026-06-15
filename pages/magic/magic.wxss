@@ -1,0 +1,273 @@
+/* pages/magic/magic.wxss */
+
+.magic-page {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #000;
+}
+
+/* ===== 摄像头 ===== */
+.camera {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ===== 魔法画布 ===== */
+.magic-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.magic-canvas.freeze-active,
+.magic-canvas.reverse-active {
+  pointer-events: auto;
+}
+
+.magic-canvas.freeze-active {
+  filter: brightness(1.1) saturate(1.3);
+}
+
+.magic-canvas.reverse-active {
+  filter: hue-rotate(20deg) brightness(1.05);
+}
+
+/* ===== 状态栏 ===== */
+.status-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12rpx 32rpx;
+  background: linear-gradient(180deg, rgba(13, 2, 33, 0.8) 0%, transparent 100%);
+}
+
+.energy-section {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.energy-bar {
+  width: 160rpx;
+  height: 12rpx;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 6rpx;
+  overflow: hidden;
+}
+
+.energy-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--accent-cyan));
+  border-radius: 6rpx;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 12rpx var(--accent-cyan);
+}
+
+.energy-text {
+  font-size: 22rpx;
+  color: var(--accent-cyan);
+}
+
+.mode-badge {
+  padding: 8rpx 24rpx;
+  border-radius: 24rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.mode-badge.freeze {
+  opacity: 1;
+  background: rgba(0, 245, 255, 0.2);
+  color: var(--accent-cyan);
+  border: 1rpx solid rgba(0, 245, 255, 0.4);
+}
+
+.mode-badge.reverse {
+  opacity: 1;
+  background: rgba(123, 47, 190, 0.2);
+  color: var(--primary-light);
+  border: 1rpx solid rgba(123, 47, 190, 0.4);
+}
+
+.mode-badge.touch {
+  opacity: 1;
+  background: rgba(255, 215, 0, 0.2);
+  color: var(--accent-gold);
+  border: 1rpx solid rgba(255, 215, 0, 0.4);
+}
+
+/* ===== 状态提示 ===== */
+.status-toast {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  z-index: 30;
+  padding: 24rpx 48rpx;
+  background: rgba(13, 2, 33, 0.85);
+  border: 1rpx solid rgba(0, 245, 255, 0.3);
+  border-radius: 16rpx;
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.status-toast.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.status-toast text {
+  font-size: 32rpx;
+  color: var(--accent-cyan);
+}
+
+/* ===== 魔法选项环 ===== */
+.magic-ring {
+  position: absolute;
+  z-index: 40;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.3);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.magic-ring.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.ring-center {
+  position: absolute;
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 24rpx var(--accent-cyan);
+  transform: translate(-50%, -50%);
+  left: 0;
+  top: 0;
+}
+
+.ring-item {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ring-icon {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  background: rgba(13, 2, 33, 0.9);
+  border: 2rpx solid rgba(255, 215, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 24rpx rgba(255, 215, 0, 0.2);
+  backdrop-filter: blur(8px);
+}
+
+.ring-icon text {
+  font-size: 40rpx;
+}
+
+.ring-label {
+  font-size: 20rpx;
+  color: var(--text-primary);
+  white-space: nowrap;
+  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.8);
+}
+
+/* ===== 底部控制栏 ===== */
+.control-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  padding: 24rpx 32rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(0deg, rgba(13, 2, 33, 0.9) 0%, transparent 100%);
+}
+
+.spell-buttons {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.spell-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  padding: 16rpx 24rpx;
+  border-radius: 20rpx;
+  transition: all 0.2s ease;
+}
+
+.spell-btn.active {
+  background: rgba(0, 245, 255, 0.15);
+}
+
+.spell-btn:active {
+  transform: scale(0.92);
+}
+
+.spell-icon {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2rpx solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+  transition: all 0.2s ease;
+}
+
+.spell-btn.active .spell-icon {
+  background: rgba(0, 245, 255, 0.2);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 32rpx rgba(0, 245, 255, 0.4);
+}
+
+.spell-name {
+  font-size: 22rpx;
+  color: var(--text-secondary);
+}
+
+.spell-btn.active .spell-name {
+  color: var(--accent-cyan);
+}
+
+.hint-bar {
+  text-align: center;
+}
+
+.hint-bar text {
+  font-size: 24rpx;
+  color: var(--text-muted);
+}

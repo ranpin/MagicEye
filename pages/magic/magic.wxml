@@ -1,0 +1,96 @@
+<view class="magic-page">
+  <!-- 实时摄像头 -->
+  <camera
+    class="camera"
+    device-position="back"
+    flash="off"
+    resolution="high"
+    frame-size="medium"
+    bind:error="onCameraError"
+  ></camera>
+
+  <!-- 魔法画布叠加层 -->
+  <canvas
+    type="2d"
+    id="magicCanvas"
+    class="magic-canvas {{freezeActive ? 'freeze-active' : ''}} {{reverseActive ? 'reverse-active' : ''}}"
+    style="width: {{screenWidth}}px; height: {{screenHeight}}px;"
+    bind:touchstart="onCanvasTouchStart"
+    catch:touchmove="onCanvasTouchMove"
+    catch:touchend="onCanvasTouchEnd"
+  ></canvas>
+
+  <!-- 状态栏 -->
+  <view class="status-bar" style="padding-top: {{statusBarHeight}}px;">
+    <view class="energy-section">
+      <view class="energy-bar">
+        <view class="energy-fill" style="width: {{energyPercent}}%;"></view>
+      </view>
+      <text class="energy-text">魔力 {{energyPercent}}%</text>
+    </view>
+    <view class="mode-badge {{currentMode}}">
+      <text>{{modeText}}</text>
+    </view>
+  </view>
+
+  <!-- 状态提示 -->
+  <view class="status-toast {{showToast ? 'show' : ''}}">
+    <text>{{toastText}}</text>
+  </view>
+
+  <!-- 魔法选项环 -->
+  <view class="magic-ring {{showRing ? 'show' : ''}}"
+    style="left: {{ringX}}px; top: {{ringY}}px;">
+    <view
+      wx:for="{{ringItems}}"
+      wx:key="name"
+      class="ring-item"
+      data-effect="{{item.effect}}"
+      bind:tap="onSelectEffect"
+      style="transform: translate({{item.dx}}px, {{item.dy}}px);">
+      <view class="ring-icon">
+        <text>{{item.emoji}}</text>
+      </view>
+      <text class="ring-label">{{item.label}}</text>
+    </view>
+    <view class="ring-center"></view>
+  </view>
+
+  <!-- 底部控制栏 -->
+  <view class="control-bar">
+    <!-- 魔法按钮组 -->
+    <view class="spell-buttons">
+      <view
+        class="spell-btn {{currentMode === 'freeze' ? 'active' : ''}}"
+        bind:tap="onFreezeTap">
+        <text class="spell-icon">⏸</text>
+        <text class="spell-name">冻结</text>
+      </view>
+
+      <view
+        class="spell-btn {{currentMode === 'reverse' ? 'active' : ''}}"
+        bind:longpress="onReverseStart"
+        bind:touchend="onReverseEnd">
+        <text class="spell-icon">⏪</text>
+        <text class="spell-name">倒流</text>
+      </view>
+
+      <view
+        class="spell-btn {{currentMode === 'touch' ? 'active' : ''}}"
+        bind:tap="onTouchModeTap">
+        <text class="spell-icon">✋</text>
+        <text class="spell-name">触碰</text>
+      </view>
+
+      <view class="spell-btn" bind:tap="onShootTap">
+        <text class="spell-icon">📸</text>
+        <text class="spell-name">拍摄</text>
+      </view>
+    </view>
+
+    <!-- 提示文字 -->
+    <view class="hint-bar">
+      <text>{{hintText}}</text>
+    </view>
+  </view>
+</view>

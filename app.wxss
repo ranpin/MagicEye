@@ -1,0 +1,42 @@
+page {
+  --primary: #7B2FBE;
+  --primary-light: #9B4DCA;
+  --accent-cyan: #00F5FF;
+  --accent-gold: #FFD700;
+  --accent-pink: #FF006E;
+  --bg-dark: #0D0221;
+  --bg-mid: #1A0A3E;
+  --bg-light: #2D1B69;
+  --text-primary: #FFFFFF;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.4);
+
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+  overflow: hidden;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 0 40rpx;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: var(--text-primary);
+  border: none;
+  border-radius: 50rpx;
+  padding: 28rpx 80rpx;
+  font-size: 36rpx;
+  font-weight: 600;
+  box-shadow: 0 8rpx 32rpx rgba(123, 47, 190, 0.4);
+}
+
+.btn-primary::after {
+  border: none;
+}
