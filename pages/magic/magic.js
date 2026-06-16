@@ -25,7 +25,10 @@ Page({
     ringX: 0,
     ringY: 0,
     ringItems: [],
-    hintText: '选择下方的魔法，开始施法'
+    hintText: '选择下方的魔法，开始施法',
+    isRecording: false,
+    recordFrameCount: 0,
+    showGestureHint: false
   },
 
   // ---- 内部状态 ----
@@ -44,10 +47,12 @@ Page({
 
   onLoad() {
     const sys = wx.getSystemInfoSync()
+    const showGestureHint = !wx.getStorageSync('gestureHintDismissed')
     this.setData({
       screenWidth: sys.windowWidth,
       screenHeight: sys.windowHeight,
-      statusBarHeight: sys.statusBarHeight || 44
+      statusBarHeight: sys.statusBarHeight || 44,
+      showGestureHint
     })
   },
 
@@ -205,6 +210,7 @@ Page({
     this._isRecording = true
     this._frameBuffer = []
     let count = 0
+    this.setData({ isRecording: true, recordFrameCount: 0 })
 
     const capture = () => {
       if (!this._isRecording || count >= 60) {
@@ -221,8 +227,8 @@ Page({
           if (!this._isRecording) return
           this._frameBuffer.push(res.tempImagePath)
           count++
+          this.setData({ recordFrameCount: count })
           this._consumeEnergy(1)
-          // 每 100ms 取一帧 (~10fps)
           this._recordTimer = setTimeout(capture, 100)
         },
         fail: () => {
@@ -240,6 +246,7 @@ Page({
       clearTimeout(this._recordTimer)
       this._recordTimer = null
     }
+    this.setData({ isRecording: false, recordFrameCount: 0 })
   },
 
   _playReverse() {
@@ -739,6 +746,11 @@ Page({
 
   onOpenSettings() {
     wx.navigateTo({ url: '/pages/settings/settings' })
+  },
+
+  onDismissGestureHint() {
+    this.setData({ showGestureHint: false })
+    wx.setStorageSync('gestureHintDismissed', true)
   },
 
   onCameraError(e) {

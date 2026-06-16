@@ -41,22 +41,36 @@
     <text>{{toastText}}</text>
   </view>
 
+  <!-- 录制指示器 -->
+  <view class="rec-indicator {{isRecording ? 'show' : ''}}">
+    <view class="rec-dot"></view>
+    <text class="rec-text">REC {{recordFrameCount}}</text>
+  </view>
+
   <!-- 魔法选项环 -->
   <view class="magic-ring {{showRing ? 'show' : ''}}"
     style="left: {{ringX}}px; top: {{ringY}}px;">
+    <!-- 连接线（用 canvas 绘制） -->
     <view
       wx:for="{{ringItems}}"
       wx:key="name"
-      class="ring-item"
+      class="ring-item ring-item-anim"
+      style="--dx: {{item.dx}}px; --dy: {{item.dy}}px; animation-delay: {{index * 0.06}}s;"
       data-effect="{{item.effect}}"
-      bind:tap="onSelectEffect"
-      style="transform: translate({{item.dx}}px, {{item.dy}}px);">
+      bind:tap="onSelectEffect">
       <view class="ring-icon">
         <text>{{item.emoji}}</text>
       </view>
       <text class="ring-label">{{item.label}}</text>
     </view>
-    <view class="ring-center"></view>
+    <view class="ring-center">
+      <view class="ring-pulse"></view>
+    </view>
+  </view>
+
+  <!-- 手势提示（首次显示） -->
+  <view class="gesture-hint {{showGestureHint ? 'show' : ''}}" bind:tap="onDismissGestureHint">
+    <text class="gesture-hint-text">↗ 右滑切换魔法 · ↖ 左滑取消 · ↑ 上滑冻结</text>
   </view>
 
   <!-- 底部控制栏 -->
