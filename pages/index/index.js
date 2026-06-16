@@ -35,7 +35,7 @@ Page({
               wx.openSetting({
                 success(settingRes) {
                   if (settingRes.authSetting['scope.camera']) {
-                    wx.navigateTo({ url: '/pages/magic/magic' })
+                    wx.redirectTo({ url: '/pages/magic/magic' })
                   }
                 }
               })

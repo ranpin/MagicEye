@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 import random
+import re
 
 from server.config import settings
 
@@ -55,7 +56,14 @@ def _extract_json(text: str) -> dict:
         text = text.split("```json")[1].split("```")[0]
     elif "```" in text:
         text = text.split("```")[1].split("```")[0]
-    return json.loads(text.strip())
+    text = text.strip()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        match = re.search(r'\{.*\}', text, re.DOTALL)
+        if match:
+            return json.loads(match.group())
+        raise
 
 
 class AnthropicProvider:

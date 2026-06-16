@@ -1,15 +1,17 @@
 <view class="magic-page">
-  <!-- 实时摄像头 -->
+  <!-- 摄像头（移至屏幕外，仅用于 takePhoto/onCameraFrame 数据源） -->
   <camera
     class="camera"
+    style="position: fixed; left: -9999px; top: 0; width: 1px; height: 1px; opacity: 0;"
     device-position="back"
     flash="off"
     resolution="high"
     frame-size="medium"
+    bindinit="onCameraReady"
     bind:error="onCameraError"
   ></camera>
 
-  <!-- 魔法画布叠加层 -->
+  <!-- 魔法画布（渲染摄像头画面 + 特效） -->
   <canvas
     type="2d"
     id="magicCanvas"
@@ -53,7 +55,7 @@
     <!-- 连接线（用 canvas 绘制） -->
     <view
       wx:for="{{ringItems}}"
-      wx:key="name"
+      wx:key="effect"
       class="ring-item ring-item-anim"
       style="--dx: {{item.dx}}px; --dy: {{item.dy}}px; animation-delay: {{index * 0.06}}s;"
       data-effect="{{item.effect}}"

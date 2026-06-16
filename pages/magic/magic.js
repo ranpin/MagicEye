@@ -43,10 +43,19 @@ Page({
   _frameBuffer: [],
   _reverseTimer: null,
   _reverseIndex: 0,
+  _reversePlaying: false,
   _isRecording: false,
+  _isVideoRecording: false,
   _recordTimer: null,
   _energyTimer: null,
   _animTimer: null,
+
+  // ---- 摄像头帧渲染 ----
+  _cameraReady: false,
+  _frameListener: null,
+  _cameraFrameBuffer: null,
+  _cameraOffscreen: null,
+  _lastFrameTime: 0,
 
   // ---- API 集成状态 ----
   _detectedObjects: [],
@@ -87,6 +96,34 @@ Page({
     this._cameraCtx = wx.createCameraContext()
   },
 
+  onCameraReady() {
+    this._cameraReady = true
+  },
+
+  _startCameraFrame() {
+    if (!this._cameraCtx || this._frameListener) return
+    try {
+      this._frameListener = this._cameraCtx.onCameraFrame((frame) => {
+        if (this._cameraReady) {
+          this._cameraFrameBuffer = frame
+        }
+      })
+    } catch (e) {
+      console.warn('onCameraFrame not supported:', e.message)
+    }
+  },
+
+  _stopCameraFrame() {
+    if (this._frameListener) {
+      try {
+        this._frameListener.stop()
+      } catch (e) {}
+      this._frameListener = null
+    }
+    this._cameraFrameBuffer = null
+    this._cameraReady = false
+  },
+
   _initCanvas() {
     const query = wx.createSelectorQuery()
     query.select('#magicCanvas')
@@ -96,11 +133,9 @@ Page({
 
         const canvas = res[0].node
         const ctx = canvas.getContext('2d')
-        const dpr = wx.getSystemInfoSync().pixelRatio
 
-        canvas.width = this.data.screenWidth * dpr
-        canvas.height = this.data.screenHeight * dpr
-        ctx.scale(dpr, dpr)
+        canvas.width = this.data.screenWidth
+        canvas.height = this.data.screenHeight
 
         this._canvas = canvas
         this._canvasCtx = ctx
@@ -110,6 +145,9 @@ Page({
           this.data.screenWidth,
           this.data.screenHeight
         )
+
+        this._startCameraFrame()
+        this._startAnimation()
       })
   },
 
@@ -183,7 +221,6 @@ Page({
   },
 
   _exitFreeze() {
-    this._stopAnimation()
     this._particleSystem && this._particleSystem.setMode('idle')
 
     this.setData({
@@ -192,15 +229,6 @@ Page({
       freezeActive: false,
       hintText: '选择下方的魔法，开始施法'
     })
-
-    // 清除画布
-    if (this._canvasCtx) {
-      this._canvasCtx.clearRect(
-        0, 0,
-        this.data.screenWidth,
-        this.data.screenHeight
-      )
-    }
 
     this._vibrate('light')
     this._showToast('时间恢复流动')
@@ -230,18 +258,23 @@ Page({
     if (this.data.currentMode !== 'reverse') return
 
     this._stopRecording()
-    this._playReverse()
+    if (!this._reversePlaying) {
+      this._reversePlaying = true
+      this._playReverse()
+    }
   },
 
   _startRecording() {
     this._isRecording = true
+    this._reversePlaying = false
     this._frameBuffer = []
     let count = 0
     this.setData({ isRecording: true, recordFrameCount: 0 })
 
     const capture = () => {
       if (!this._isRecording || count >= 60) {
-        if (count >= 60) {
+        if (count >= 60 && !this._reversePlaying) {
+          this._reversePlaying = true
           this._stopRecording()
           this._playReverse()
         }
@@ -335,7 +368,7 @@ Page({
   },
 
   _exitReverse() {
-    this._stopAnimation()
+    this._reversePlaying = false
     if (this._reverseTimer) {
       clearTimeout(this._reverseTimer)
       this._reverseTimer = null
@@ -343,14 +376,6 @@ Page({
 
     this._particleSystem && this._particleSystem.setMode('idle')
     this._frameBuffer = []
-
-    if (this._canvasCtx) {
-      this._canvasCtx.clearRect(
-        0, 0,
-        this.data.screenWidth,
-        this.data.screenHeight
-      )
-    }
 
     this.setData({
       currentMode: '',
@@ -446,10 +471,6 @@ Page({
     this._selectedObject = null
     this._effectImage = null
     this._effectCrop = null
-
-    if (this._canvasCtx && this._canvas) {
-      this._canvasCtx.clearRect(0, 0, this.data.screenWidth, this.data.screenHeight)
-    }
 
     this.setData({
       currentMode: '',
@@ -668,14 +689,6 @@ Page({
       this._particleSystem && this._particleSystem.setMode('idle')
       this._effectImage = null
       this._effectCrop = null
-      if (this._canvasCtx) {
-        this._canvasCtx.clearRect(
-          0, 0,
-          this.data.screenWidth,
-          this.data.screenHeight
-        )
-      }
-      this._stopAnimation()
     }, this._effectDuration)
 
     this._generateAIEffect(effect)
@@ -853,9 +866,11 @@ Page({
       success: async (res) => {
         this._freezeFrame = res.tempImagePath
 
-        imageUtil.filePathToBase64(res.tempImagePath).then(b64 => {
-          this._freezeFrameBase64 = b64
-        }).catch(() => {})
+        try {
+          this._freezeFrameBase64 = await imageUtil.filePathToBase64(res.tempImagePath)
+        } catch (e) {
+          this._freezeFrameBase64 = null
+        }
 
         if (this._canvas && this._canvasCtx) {
           const img = this._canvas.createImage()
@@ -899,6 +914,8 @@ Page({
           this.data.screenHeight
         )
         this._canvasCtx.globalAlpha = 1.0
+      } else {
+        this._renderCameraFrame()
       }
 
       if (this.data.currentMode === 'touch' && this._detectedObjects.length > 0) {
@@ -913,6 +930,40 @@ Page({
     }
 
     this._animTimer = this._canvas.requestAnimationFrame(animate)
+  },
+
+  _renderCameraFrame() {
+    if (!this._cameraFrameBuffer || !this._canvas) return
+
+    const now = Date.now()
+    if (now - this._lastFrameTime < 33) return
+    this._lastFrameTime = now
+
+    const frame = this._cameraFrameBuffer
+    const ctx = this._canvasCtx
+
+    try {
+      if (!this._cameraOffscreen) {
+        this._cameraOffscreen = this._canvas.createOffscreenCanvas({
+          width: this.data.screenWidth,
+          height: this.data.screenHeight
+        })
+      }
+
+      const offCtx = this._cameraOffscreen.getContext('2d')
+      const imgData = offCtx.createImageData(frame.width, frame.height)
+      imgData.data.set(new Uint8ClampedArray(frame.data))
+      offCtx.putImageData(imgData, 0, 0)
+
+      ctx.drawImage(
+        this._cameraOffscreen,
+        0, 0,
+        this.data.screenWidth,
+        this.data.screenHeight
+      )
+    } catch (e) {
+      // createOffscreenCanvas or putImageData not supported — camera preview unavailable
+    }
   },
 
   _stopAnimation() {
@@ -943,7 +994,6 @@ Page({
   },
 
   _exitAllModes() {
-    this._stopAnimation()
     if (this._isRecording) this._stopRecording()
     if (this._reverseTimer) {
       clearTimeout(this._reverseTimer)
@@ -961,14 +1011,6 @@ Page({
     this._freezeFrameBase64 = null
     this._freezeImage = null
 
-    if (this._canvasCtx) {
-      this._canvasCtx.clearRect(
-        0, 0,
-        this.data.screenWidth,
-        this.data.screenHeight
-      )
-    }
-
     this.setData({
       currentMode: '',
       modeText: '',
@@ -980,6 +1022,8 @@ Page({
 
   _cleanup() {
     this._exitAllModes()
+    this._stopAnimation()
+    this._stopCameraFrame()
     if (this._energyTimer) {
       clearInterval(this._energyTimer)
       this._energyTimer = null

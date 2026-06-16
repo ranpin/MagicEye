@@ -1,20 +1,33 @@
 import base64
 import io
+import logging
 
 from PIL import Image
+
+logger = logging.getLogger(__name__)
 
 
 def decode_base64_image(data: str) -> Image.Image:
     if "," in data:
         data = data.split(",", 1)[1]
     img_bytes = base64.b64decode(data)
-    return Image.open(io.BytesIO(img_bytes))
+    buf = io.BytesIO(img_bytes)
+    try:
+        img = Image.open(buf)
+        img.load()
+        return img
+    except Exception as e:
+        buf.close()
+        raise ValueError(f"Invalid image data: {e}") from e
 
 
 def encode_image_base64(img: Image.Image, fmt: str = "PNG") -> str:
     buf = io.BytesIO()
-    img.save(buf, format=fmt)
-    return base64.b64encode(buf.getvalue()).decode("utf-8")
+    try:
+        img.save(buf, format=fmt)
+        return base64.b64encode(buf.getvalue()).decode("utf-8")
+    finally:
+        buf.close()
 
 
 def preprocess_image(data: str, max_dim: int = 2048) -> tuple[str, int, int]:

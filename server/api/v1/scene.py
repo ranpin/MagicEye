@@ -13,7 +13,12 @@ router = APIRouter()
 
 @router.post("/scene/analyze", response_model=SceneResponse)
 async def analyze_scene(request: ImageRequest):
-    processed_b64, w, h = preprocess_image(request.image)
+    try:
+        processed_b64, w, h = preprocess_image(request.image)
+    except Exception as e:
+        logger.error("Image preprocessing failed: %s", e)
+        return SceneResponse(scene="unknown", weather="unknown", lighting="unknown")
+
     logger.info("Analyzing scene for image %dx%d", w, h)
     result = claude_vision.analyze_scene(processed_b64)
     return result

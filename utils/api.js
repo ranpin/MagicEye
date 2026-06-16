@@ -95,7 +95,7 @@ class MagicEyeAPI {
     })
   }
 
-  _mock(path) {
+  _mock(path, _data) {
     return new Promise((resolve) => {
       setTimeout(() => {
         switch (path) {

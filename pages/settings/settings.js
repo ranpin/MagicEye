@@ -63,7 +63,13 @@ Page({
   },
 
   onApiUrlInput(e) {
+    const url = e.detail.value.trim()
     this.setData({ apiBaseUrl: e.detail.value })
+    if (url) {
+      wx.setStorageSync('apiBaseUrl', url)
+    } else {
+      wx.removeStorageSync('apiBaseUrl')
+    }
   },
 
   onApiUrlBlur() {

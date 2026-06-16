@@ -62,6 +62,8 @@ class MotionInfo(BaseModel):
     type: str
     direction: list[float]
     speed: float
+    directionLabel: str = ""
+    speedLabel: str = ""
 
 
 class MotionResponse(BaseModel):

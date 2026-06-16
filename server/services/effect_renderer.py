@@ -2,12 +2,6 @@ import random
 from PIL import Image, ImageDraw, ImageFilter
 
 
-def _create_overlay(size: tuple[int, int]) -> tuple[Image.Image, ImageDraw.ImageDraw]:
-    overlay = Image.new("RGBA", size, (0, 0, 0, 0))
-    draw = ImageDraw.Draw(overlay)
-    return overlay, draw
-
-
 def _bbox_rect(bbox: dict) -> tuple[int, int, int, int]:
     x = int(bbox["x"])
     y = int(bbox["y"])
@@ -17,8 +11,6 @@ def _bbox_rect(bbox: dict) -> tuple[int, int, int, int]:
 
 
 def render_gold(img: Image.Image, bbox: dict) -> Image.Image:
-    overlay, draw = _create_overlay(img.size)
-
     x1, y1, x2, y2 = _bbox_rect(bbox)
     gold_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
     gold_draw = ImageDraw.Draw(gold_layer)
@@ -39,8 +31,6 @@ def render_gold(img: Image.Image, bbox: dict) -> Image.Image:
 
 
 def render_crystal(img: Image.Image, bbox: dict) -> Image.Image:
-    overlay, draw = _create_overlay(img.size)
-
     x1, y1, x2, y2 = _bbox_rect(bbox)
     crystal_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
     crystal_draw = ImageDraw.Draw(crystal_layer)
@@ -61,8 +51,6 @@ def render_crystal(img: Image.Image, bbox: dict) -> Image.Image:
 
 
 def render_fire(img: Image.Image, bbox: dict) -> Image.Image:
-    overlay, draw = _create_overlay(img.size)
-
     x1, y1, x2, y2 = _bbox_rect(bbox)
     fire_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
     fire_draw = ImageDraw.Draw(fire_layer)
@@ -89,8 +77,6 @@ def render_fire(img: Image.Image, bbox: dict) -> Image.Image:
 
 
 def render_bloom(img: Image.Image, bbox: dict) -> Image.Image:
-    overlay, draw = _create_overlay(img.size)
-
     x1, y1, x2, y2 = _bbox_rect(bbox)
     bloom_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
     bloom_draw = ImageDraw.Draw(bloom_layer)
@@ -117,8 +103,6 @@ def render_bloom(img: Image.Image, bbox: dict) -> Image.Image:
 
 
 def render_sparkle(img: Image.Image, bbox: dict) -> Image.Image:
-    overlay, draw = _create_overlay(img.size)
-
     x1, y1, x2, y2 = _bbox_rect(bbox)
     sparkle_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
     sparkle_draw = ImageDraw.Draw(sparkle_layer)

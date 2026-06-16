@@ -17,9 +17,7 @@
       "desc": "魔眼需要使用摄像头来施展魔法"
     }
   },
-  "requiredPrivateInfos": [
-    "chooseAddress"
-  ],
+  "requiredPrivateInfos": [],
   "sitemapLocation": "sitemap.json",
   "lazyCodeLoading": "requiredComponents"
 }
