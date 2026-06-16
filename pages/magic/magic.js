@@ -37,7 +37,6 @@ Page({
   _canvas: null,
   _canvasCtx: null,
   _particleSystem: null,
-  _freezeFrame: null,
   _freezeFrameBase64: null,
   _freezeImage: null,
   _frameBuffer: [],
@@ -56,6 +55,7 @@ Page({
   _cameraFrameBuffer: null,
   _cameraOffscreen: null,
   _lastFrameTime: 0,
+  _destroyed: false,
 
   // ---- API 集成状态 ----
   _detectedObjects: [],
@@ -189,7 +189,10 @@ Page({
     }
 
     this._exitAllModes()
-    this._captureFrame(() => {
+    this._captureFrame((img) => {
+      if (img) {
+        this._freezeImage = img
+      }
       this.setData({
         currentMode: 'freeze',
         modeText: '⏸ 时间冻结',
@@ -774,6 +777,8 @@ Page({
 
     this._canvasCtx.save()
     this._canvasCtx.globalAlpha = alpha
+    // effectImage is already cropped server-side to bbox+padding region,
+    // so draw the entire image at the crop position mapped to screen space
     this._canvasCtx.drawImage(
       this._effectImage,
       cropX * sx,
@@ -864,8 +869,6 @@ Page({
     this._cameraCtx.takePhoto({
       quality: 'normal',
       success: async (res) => {
-        this._freezeFrame = res.tempImagePath
-
         try {
           this._freezeFrameBase64 = await imageUtil.filePathToBase64(res.tempImagePath)
         } catch (e) {
@@ -875,21 +878,18 @@ Page({
         if (this._canvas && this._canvasCtx) {
           const img = this._canvas.createImage()
           img.onload = () => {
-            this._freezeImage = img
-            this._canvasCtx.drawImage(
-              img, 0, 0,
-              this.data.screenWidth,
-              this.data.screenHeight
-            )
-            if (callback) callback()
+            if (callback) callback(img)
+          }
+          img.onerror = () => {
+            if (callback) callback(null)
           }
           img.src = res.tempImagePath
         } else {
-          if (callback) callback()
+          if (callback) callback(null)
         }
       },
       fail: () => {
-        if (callback) callback()
+        if (callback) callback(null)
       }
     })
   },
@@ -898,7 +898,7 @@ Page({
     if (this._animTimer) return
 
     const animate = () => {
-      if (!this._canvasCtx || !this._canvas) return
+      if (this._destroyed || !this._canvasCtx || !this._canvas) return
 
       this._canvasCtx.clearRect(
         0, 0,
@@ -926,7 +926,9 @@ Page({
       this._particleSystem && this._particleSystem.draw()
       this._renderEffectOnCanvas()
 
-      this._animTimer = this._canvas.requestAnimationFrame(animate)
+      if (!this._destroyed) {
+        this._animTimer = this._canvas.requestAnimationFrame(animate)
+      }
     }
 
     this._animTimer = this._canvas.requestAnimationFrame(animate)
@@ -943,10 +945,12 @@ Page({
     const ctx = this._canvasCtx
 
     try {
-      if (!this._cameraOffscreen) {
+      if (!this._cameraOffscreen ||
+          this._cameraOffscreen.width !== frame.width ||
+          this._cameraOffscreen.height !== frame.height) {
         this._cameraOffscreen = this._canvas.createOffscreenCanvas({
-          width: this.data.screenWidth,
-          height: this.data.screenHeight
+          width: frame.width,
+          height: frame.height
         })
       }
 
@@ -957,6 +961,7 @@ Page({
 
       ctx.drawImage(
         this._cameraOffscreen,
+        0, 0, frame.width, frame.height,
         0, 0,
         this.data.screenWidth,
         this.data.screenHeight
@@ -1021,9 +1026,12 @@ Page({
   },
 
   _cleanup() {
+    this._destroyed = true
     this._exitAllModes()
     this._stopAnimation()
     this._stopCameraFrame()
+    this._canvas = null
+    this._canvasCtx = null
     if (this._energyTimer) {
       clearInterval(this._energyTimer)
       this._energyTimer = null
