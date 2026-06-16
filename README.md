@@ -6,10 +6,21 @@ MagicEye 是一款基于微信小程序的增强现实魔法交互工具。通�
 
 ## 核心功能
 
-- **⏸ 时间冻结 (Chronos Freeze)** — 冻结画面中的一切运动，雨滴悬停、飞鸟静止
-- **⏪ 时间倒流 (Time Reverse)** — 按住录制，松手后画面反向播放
+- **⏸ 时间冻结 (Chronos Freeze)** — 冻结画面中的一切运动，冰晶霜纹从中心展开
+- **⏪ 时间倒流 (Time Reverse)** — 按住录制，松手后画面逐帧反向播放
 - **✋ 点石成金 (Midas Touch)** — 触碰画面中的物体，弹出魔法选项环，施加变换效果
 - **📸 魔法拍摄** — 拍照或录制视频，保存你的魔法瞬间
+
+## 交互方式
+
+| 操作 | 效果 |
+|------|------|
+| 点击 ⏸ 按钮 | 冻结/恢复时间 |
+| 长按 ⏪ 按钮 | 录制倒流帧，松手后反向播放 |
+| 点击 ✋ 按钮 | 进入触碰模式，点击画面物体弹出魔法环 |
+| 右滑画面 | 循环切换魔法模式 |
+| 左滑画面 | 取消当前魔法 |
+| 上滑画面 | 快速冻结 |
 
 ## 技术架构
 
@@ -17,13 +28,13 @@ MagicEye 是一款基于微信小程序的增强现实魔法交互工具。通�
 小程序前端                    云端 AI 服务 (Phase 2)
 ┌─────────────┐              ┌──────────────┐
 │ Camera 采集  │ ──WebSocket──▶│ 场景理解      │
-│ 手势/触控    │              │ 物体检测      │
+│ 触控/滑动    │              │ 物体检测      │
 │ Canvas 渲染  │◀──────────────│ 运动估计      │
 │ 粒子特效     │              │ 图像生成      │
 └─────────────┘              └──────────────┘
 ```
 
-- **端侧**: 微信小程序 Camera API + Canvas 2D 实时渲染
+- **端侧**: 微信小程序 Camera API + Canvas 2D 实时渲染 + 粒子系统
 - **云端**: 多模态大模型场景理解 + 扩散模型图像生成 (Phase 2)
 
 ## 开发
@@ -35,42 +46,48 @@ MagicEye 是一款基于微信小程序的增强现实魔法交互工具。通�
 
 ### 快速开始
 
-1. 打开微信开发者工具
-2. 导入项目，选择 `MagicEye` 目录
-3. AppID 可留空（使用测试号）或填入你的小程序 AppID
-4. 编译运行
+1. 克隆仓库
+2. 打开微信开发者工具
+3. 导入项目，选择 `MagicEye` 目录
+4. AppID 可留空（使用测试号）或填入你的小程序 AppID
+5. 编译运行
 
 ### 项目结构
 
 ```
 MagicEye/
-├── app.js                    # 应用入口
-├── app.json                  # 全局配置
-├── app.wxss                  # 全局样式
-├── project.config.json       # 项目配置
+├── app.js                       # 应用入口
+├── app.json                     # 全局配置
+├── app.wxss                     # 全局样式（魔法主题色系）
+├── project.config.json          # 微信开发者工具项目配置
 ├── pages/
-│   ├── index/                # 欢迎页
-│   │   ├── index.js
-│   │   ├── index.json
-│   │   ├── index.wxml
-│   │   └── index.wxss
-│   └── magic/                # 核心魔法体验页
-│       ├── magic.js
-│       ├── magic.json
-│       ├── magic.wxml
-│       └── magic.wxss
+│   ├── index/                   # 欢迎页（星空粒子动画 + 功能卡片）
+│   ├── tutorial/                # 3步交互式新手引导
+│   ├── magic/                   # 核心魔法体验页
+│   └── settings/                # 设置页
 ├── utils/
-│   ├── effects.js            # 粒子系统和魔法特效渲染
-│   └── api.js                # 云端 AI 服务客户端
-└── PRD.md                    # 产品需求文档
+│   ├── effects.js               # 粒子系统 + 冻结/倒流/爆发特效渲染
+│   └── api.js                   # 云端 AI 服务客户端（含 Mock）
+├── PRD.md                       # 产品需求文档
+└── README.md
+```
+
+### 页面流程
+
+```
+欢迎页 → 摄像头权限 → 教学引导（首次） → 魔法体验页
+                                            ↕
+                                         设置页
 ```
 
 ## 开发路线
 
 - [x] **Phase 1**: 基础框架 + 冻结/倒流/触碰核心交互
-- [ ] **Phase 2**: 云端 AI 接入（场景理解、物体检测、运动估计）
-- [ ] **Phase 3**: 完整魔法效果（AI 图像生成、材质变换）
-- [ ] **Phase 4**: 体验打磨（手势识别、音效、引导优化）
+- [ ] **Phase 2**: 云端 AI 接入（场景理解、物体检测、运动估计）→ [Issues #1](https://github.com/ranpin/MagicEye/issues/1), [#2](https://github.com/ranpin/MagicEye/issues/2)
+- [ ] **Phase 3**: 完整魔法效果（AI 图像生成、材质变换）→ [Issue #3](https://github.com/ranpin/MagicEye/issues/3)
+- [ ] **Phase 4**: 体验打磨（手势识别、音效）→ [Issues #4](https://github.com/ranpin/MagicEye/issues/4), [#5](https://github.com/ranpin/MagicEye/issues/5)
+
+查看所有 [Issues](https://github.com/ranpin/MagicEye/issues) 了解详细的待办事项。
 
 ## 许可
 
