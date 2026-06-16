@@ -45,6 +45,27 @@
   </view>
 
   <view class="settings-group">
+    <text class="group-title">开发者</text>
+
+    <view class="setting-item setting-item-col">
+      <text class="setting-label">AI 服务地址</text>
+      <input
+        class="setting-input"
+        value="{{apiBaseUrl}}"
+        placeholder="http://localhost:8000"
+        bindinput="onApiUrlInput"
+        bindblur="onApiUrlBlur"
+      />
+      <text class="setting-hint">留空则使用内置演示模式</text>
+    </view>
+
+    <view class="setting-item" bind:tap="onTestConnection">
+      <text class="setting-label">测试连接</text>
+      <text class="arrow">›</text>
+    </view>
+  </view>
+
+  <view class="settings-group">
     <text class="group-title">其他</text>
 
     <view class="setting-item" bind:tap="onReplayTutorial">

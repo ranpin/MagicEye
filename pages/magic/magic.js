@@ -1,5 +1,6 @@
 const effects = require('../../utils/effects')
 const api = require('../../utils/api')
+const imageUtil = require('../../utils/imageUtil')
 
 const RING_ITEMS = [
   { label: '点石成金', emoji: '🪙', effect: 'gold' },
@@ -37,6 +38,7 @@ Page({
   _canvasCtx: null,
   _particleSystem: null,
   _freezeFrame: null,
+  _freezeFrameBase64: null,
   _frameBuffer: [],
   _reverseTimer: null,
   _reverseIndex: 0,
@@ -44,6 +46,15 @@ Page({
   _recordTimer: null,
   _energyTimer: null,
   _animTimer: null,
+
+  // ---- API 集成状态 ----
+  _detectedObjects: [],
+  _currentFrameBase64: null,
+  _selectedObject: null,
+  _effectImage: null,
+  _effectBbox: null,
+  _effectStartTime: 0,
+  _effectDuration: 5000,
 
   onLoad() {
     const sys = wx.getSystemInfoSync()
@@ -152,6 +163,17 @@ Page({
       // 冻结粒子效果
       this._particleSystem.setMode('freeze')
       this._startAnimation()
+
+      // 异步分析场景（非阻塞）
+      if (this._freezeFrameBase64) {
+        api.analyzeScene(this._freezeFrameBase64).then(result => {
+          if (result && result.scene && this.data.currentMode === 'freeze') {
+            const sceneLabel = result.scene.replace(/_/g, ' ')
+            const weatherLabel = result.weather !== 'unknown' ? ` · ${result.weather}` : ''
+            this.setData({ hintText: `${sceneLabel}${weatherLabel} | 点击解除` })
+          }
+        }).catch(() => {})
+      }
     })
   },
 
@@ -345,14 +367,81 @@ Page({
     this.setData({
       currentMode: 'touch',
       modeText: '✋ 点石成金',
-      hintText: '轻触画面中的物体，施加魔法'
+      hintText: '正在识别物体...'
     })
 
     this._vibrate('light')
-    this._showToast('触碰模式已开启，轻点画面')
+    this._showToast('触碰模式，识别中...')
+    this._detectObjectsForTouch()
+  },
+
+  _detectObjectsForTouch() {
+    this._cameraCtx.takePhoto({
+      quality: 'low',
+      success: async (res) => {
+        try {
+          const base64 = await imageUtil.filePathToBase64(res.tempImagePath)
+          this._currentFrameBase64 = base64
+
+          const result = await api.detectObjects(base64)
+          this._detectedObjects = result.objects || []
+
+          const count = this._detectedObjects.length
+          if (count > 0) {
+            this.setData({ hintText: `识别到 ${count} 个物体，轻触画面施法` })
+            this._drawDetectionHighlights()
+          } else {
+            this.setData({ hintText: '未识别到物体，轻触画面使用粒子效果' })
+          }
+        } catch (err) {
+          console.error('Detection failed:', err)
+          this.setData({ hintText: '识别失败，使用粒子模式' })
+          this._detectedObjects = []
+        }
+      },
+      fail: () => {
+        this.setData({ hintText: '拍照失败，轻触画面使用粒子效果' })
+      }
+    })
+  },
+
+  _drawDetectionHighlights() {
+    if (!this._canvasCtx || !this._canvas) return
+
+    const ctx = this._canvasCtx
+    const scaleX = this.data.screenWidth / (this._currentImageWidth || this.data.screenWidth)
+    const scaleY = this.data.screenHeight / (this._currentImageHeight || this.data.screenHeight)
+
+    this._detectedObjects.forEach(obj => {
+      const { x, y, w, h } = obj.bbox
+      ctx.save()
+      ctx.strokeStyle = 'rgba(0, 245, 255, 0.6)'
+      ctx.lineWidth = 2
+      ctx.setLineDash([6, 4])
+      ctx.strokeRect(x * scaleX, y * scaleY, w * scaleX, h * scaleY)
+
+      ctx.fillStyle = 'rgba(0, 245, 255, 0.15)'
+      ctx.fillRect(x * scaleX, y * scaleY, w * scaleX, h * scaleY)
+
+      ctx.setLineDash([])
+      ctx.fillStyle = 'rgba(0, 245, 255, 0.9)'
+      ctx.font = '12px sans-serif'
+      ctx.fillText(obj.label, x * scaleX + 4, y * scaleY + 16)
+      ctx.restore()
+    })
   },
 
   _exitTouch() {
+    this._detectedObjects = []
+    this._currentFrameBase64 = null
+    this._selectedObject = null
+    this._effectImage = null
+    this._effectBbox = null
+
+    if (this._canvasCtx && this._canvas) {
+      this._canvasCtx.clearRect(0, 0, this.data.screenWidth, this.data.screenHeight)
+    }
+
     this.setData({
       currentMode: '',
       modeText: '',
@@ -467,7 +556,6 @@ Page({
   },
 
   _showMagicRing(x, y) {
-    // 确保环不超出屏幕
     const padding = 100
     const clampedX = Math.max(padding, Math.min(this.data.screenWidth - padding, x))
     const clampedY = Math.max(padding, Math.min(this.data.screenHeight - padding, y))
@@ -477,6 +565,8 @@ Page({
       return
     }
 
+    this._selectedObject = this._findObjectAtPosition(clampedX, clampedY)
+
     this.setData({
       showRing: true,
       ringX: clampedX,
@@ -485,11 +575,46 @@ Page({
 
     this._vibrate('medium')
 
-    // 在选中位置画发光标记
     if (this._canvasCtx) {
       this._particleSystem.emitBurst(clampedX, clampedY, 20, '#FFD700')
       this._startAnimation()
     }
+
+    if (this._selectedObject) {
+      this._showToast(`选中: ${this._selectedObject.label}`)
+    }
+  },
+
+  _findObjectAtPosition(x, y) {
+    const scaleX = this.data.screenWidth / (this._currentImageWidth || this.data.screenWidth)
+    const scaleY = this.data.screenHeight / (this._currentImageHeight || this.data.screenHeight)
+
+    for (const obj of this._detectedObjects) {
+      const bx = obj.bbox.x * scaleX
+      const by = obj.bbox.y * scaleY
+      const bw = obj.bbox.w * scaleX
+      const bh = obj.bbox.h * scaleY
+      if (x >= bx && x <= bx + bw && y >= by && y <= by + bh) {
+        return obj
+      }
+    }
+
+    if (this._detectedObjects.length > 0) {
+      let closest = null
+      let minDist = Infinity
+      for (const obj of this._detectedObjects) {
+        const cx = (obj.bbox.x + obj.bbox.w / 2) * scaleX
+        const cy = (obj.bbox.y + obj.bbox.h / 2) * scaleY
+        const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2)
+        if (dist < minDist) {
+          minDist = dist
+          closest = obj
+        }
+      }
+      if (minDist < 100) return closest
+    }
+
+    return null
   },
 
   onSelectEffect(e) {
@@ -526,8 +651,12 @@ Page({
     this._startAnimation()
 
     // 5 秒后自动清除效果
+    this._effectStartTime = Date.now()
+    this._effectDuration = 5000
     setTimeout(() => {
       this._particleSystem.setMode('idle')
+      this._effectImage = null
+      this._effectBbox = null
       if (this._canvasCtx) {
         this._canvasCtx.clearRect(
           0, 0,
@@ -536,10 +665,85 @@ Page({
         )
       }
       this._stopAnimation()
-    }, 5000)
+    }, this._effectDuration)
 
-    // TODO: Phase 2 - 发送帧到云端进行真实 AI 生成
-    // api.analyzeScene(frameData).then(...)
+    this._generateAIEffect(effect)
+  },
+
+  _generateAIEffect(effect) {
+    if (!this._currentFrameBase64) return
+
+    let bbox
+    if (this._selectedObject) {
+      bbox = this._selectedObject.bbox
+    } else {
+      const size = 120
+      bbox = {
+        x: Math.max(0, this.data.ringX - size / 2),
+        y: Math.max(0, this.data.ringY - size / 2),
+        w: size,
+        h: size
+      }
+    }
+
+    api.generateEffect({
+      imageBase64: this._currentFrameBase64,
+      bbox: bbox,
+      effect: effect
+    }).then(async (result) => {
+      if (result && result.effectImage && result.status !== 'error') {
+        try {
+          const filePath = await imageUtil.base64ToFilePath(result.effectImage)
+          if (!this._canvas) return
+
+          const img = this._canvas.createImage()
+          await new Promise((resolve, reject) => {
+            img.onload = () => resolve()
+            img.onerror = () => reject(new Error('Failed to load effect image'))
+            img.src = filePath
+          })
+
+          this._effectImage = img
+          this._effectBbox = bbox
+        } catch (err) {
+          console.error('Failed to render effect image:', err)
+        }
+      }
+    }).catch((err) => {
+      console.error('AI effect generation failed:', err)
+    })
+  },
+
+  _renderEffectOnCanvas() {
+    if (!this._effectImage || !this._effectBbox || !this._canvasCtx) return
+
+    const elapsed = Date.now() - this._effectStartTime
+    if (elapsed > this._effectDuration) {
+      this._effectImage = null
+      this._effectBbox = null
+      return
+    }
+
+    const fadeIn = Math.min(1, elapsed / 500)
+    const fadeStart = this._effectDuration - 1000
+    const fadeOut = elapsed > fadeStart
+      ? (this._effectDuration - elapsed) / 1000
+      : 1
+    const alpha = fadeIn * fadeOut * 0.85
+
+    const scaleX = this.data.screenWidth / (this._currentImageWidth || this.data.screenWidth)
+    const scaleY = this.data.screenHeight / (this._currentImageHeight || this.data.screenHeight)
+
+    this._canvasCtx.save()
+    this._canvasCtx.globalAlpha = alpha
+    this._canvasCtx.drawImage(
+      this._effectImage,
+      this._effectBbox.x * scaleX,
+      this._effectBbox.y * scaleY,
+      this._effectBbox.w * scaleX,
+      this._effectBbox.h * scaleY
+    )
+    this._canvasCtx.restore()
   },
 
   // ===== 拍摄 =====
@@ -621,9 +825,13 @@ Page({
   _captureFrame(callback) {
     this._cameraCtx.takePhoto({
       quality: 'normal',
-      success: (res) => {
+      success: async (res) => {
         this._freezeFrame = res.tempImagePath
-        // 将冻结帧绘制到 canvas
+
+        imageUtil.filePathToBase64(res.tempImagePath).then(b64 => {
+          this._freezeFrameBase64 = b64
+        }).catch(() => {})
+
         if (this._canvas && this._canvasCtx) {
           const img = this._canvas.createImage()
           img.onload = () => {
@@ -670,11 +878,13 @@ Page({
           this._canvasCtx.globalAlpha = 1.0
           this._particleSystem.update()
           this._particleSystem.draw()
+          this._renderEffectOnCanvas()
         }
         img.src = this._freezeFrame
       } else {
         this._particleSystem.update()
         this._particleSystem.draw()
+        this._renderEffectOnCanvas()
       }
 
       this._animTimer = this._canvas.requestAnimationFrame(animate)
@@ -718,6 +928,13 @@ Page({
       this._reverseTimer = null
     }
     this._particleSystem && this._particleSystem.setMode('idle')
+
+    this._detectedObjects = []
+    this._currentFrameBase64 = null
+    this._selectedObject = null
+    this._effectImage = null
+    this._effectBbox = null
+    this._freezeFrameBase64 = null
 
     if (this._canvasCtx) {
       this._canvasCtx.clearRect(

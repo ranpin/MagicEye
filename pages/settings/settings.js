@@ -4,7 +4,8 @@ Page({
     qualityIndex: 1,
     photoQualityOptions: ['标准', '高清'],
     photoQualityIndex: 1,
-    vibrationEnabled: true
+    vibrationEnabled: true,
+    apiBaseUrl: ''
   },
 
   onLoad() {
@@ -12,7 +13,8 @@ Page({
     this.setData({
       qualityIndex: settings.qualityIndex ?? 1,
       photoQualityIndex: settings.photoQualityIndex ?? 1,
-      vibrationEnabled: settings.vibrationEnabled !== false
+      vibrationEnabled: settings.vibrationEnabled !== false,
+      apiBaseUrl: wx.getStorageSync('apiBaseUrl') || ''
     })
   },
 
@@ -57,6 +59,46 @@ Page({
       title: '关于魔眼',
       content: 'MagicEye (魔眼) v0.1.0\n\n一款增强现实魔法交互工具。\n通过手机摄像头观察世界，用魔法改变一切。\n\n© 2026 MagicEye',
       showCancel: false
+    })
+  },
+
+  onApiUrlInput(e) {
+    this.setData({ apiBaseUrl: e.detail.value })
+  },
+
+  onApiUrlBlur() {
+    const url = this.data.apiBaseUrl.trim()
+    if (url) {
+      wx.setStorageSync('apiBaseUrl', url)
+    } else {
+      wx.removeStorageSync('apiBaseUrl')
+    }
+  },
+
+  onTestConnection() {
+    const url = (this.data.apiBaseUrl || '').trim()
+    if (!url) {
+      wx.showToast({ title: '请先填写服务地址', icon: 'none' })
+      return
+    }
+
+    wx.showLoading({ title: '测试中...' })
+    wx.request({
+      url: url + '/health',
+      method: 'GET',
+      timeout: 5000,
+      success: (res) => {
+        wx.hideLoading()
+        if (res.statusCode === 200 && res.data && res.data.status === 'ok') {
+          wx.showToast({ title: '连接成功', icon: 'success' })
+        } else {
+          wx.showToast({ title: '服务异常', icon: 'none' })
+        }
+      },
+      fail: () => {
+        wx.hideLoading()
+        wx.showToast({ title: '连接失败', icon: 'none' })
+      }
     })
   },
 

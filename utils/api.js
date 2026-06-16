@@ -1,19 +1,22 @@
 /**
  * MagicEye 云端 AI 服务客户端
  *
- * MVP 阶段使用 Mock 实现，Phase 2 接入真实云端 AI 服务。
+ * 支持两种模式：
+ * - Mock 模式：BASE_URL 为空时使用内置模拟数据
+ * - 真实模式：BASE_URL 指向 FastAPI 后端
  *
- * 接口规划：
- * - analyzeScene(imageBase64): 场景理解，返回场景描述和动态元素
- * - detectObjects(imageBase64): 物体检测，返回物体列表及边界框
- * - generateEffect(options): 图像生成，返回魔法效果图片
+ * BASE_URL 可通过设置页配置，存储在 wx.Storage('apiBaseUrl')
  */
 
-const BASE_URL = '' // TODO: Phase 2 配置云端服务地址
+const DEFAULT_BASE_URL = 'http://localhost:8000'
 
 class MagicEyeAPI {
-  constructor(baseUrl) {
-    this.baseUrl = baseUrl
+  get baseUrl() {
+    return wx.getStorageSync('apiBaseUrl') || ''
+  }
+
+  get isMockMode() {
+    return !this.baseUrl
   }
 
   /**
@@ -62,10 +65,12 @@ class MagicEyeAPI {
   }
 
   _request(path, data) {
-    if (!this.baseUrl) {
-      // Mock 模式：返回模拟数据
+    if (this.isMockMode) {
       return this._mock(path, data)
     }
+
+    const isSlowEndpoint = path.includes('/effect/') || path.includes('/scene/') || path.includes('/objects/')
+    const timeout = isSlowEndpoint ? 30000 : 10000
 
     return new Promise((resolve, reject) => {
       wx.request({
@@ -75,7 +80,7 @@ class MagicEyeAPI {
           'Content-Type': 'application/json'
         },
         data: data,
-        timeout: 10000,
+        timeout: timeout,
         success: (res) => {
           if (res.statusCode === 200) {
             resolve(res.data)
@@ -157,4 +162,5 @@ class MagicEyeAPI {
   }
 }
 
-module.exports = new MagicEyeAPI(BASE_URL)
+module.exports = new MagicEyeAPI()
+module.exports.DEFAULT_BASE_URL = DEFAULT_BASE_URL

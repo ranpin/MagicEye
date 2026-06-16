@@ -2,6 +2,15 @@
 node_modules/
 miniprogram_npm/
 
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+server/.env
+server/venv/
+server/.venv/
+*.egg-info/
+
 # IDE
 .idea/
 .vscode/
