@@ -111,6 +111,43 @@ class GeminiProvider:
         return self._call(OBJECT_DETECTION_PROMPT, image_base64)
 
 
+class QwenProvider:
+    def __init__(self):
+        from openai import OpenAI
+        self.client = OpenAI(
+            api_key=settings.QWEN_API_KEY,
+            base_url=settings.QWEN_BASE_URL,
+        )
+
+    def _call(self, system_prompt: str, image_base64: str) -> str:
+        response = self.client.chat.completions.create(
+            model=settings.QWEN_MODEL,
+            max_tokens=1024,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{image_base64}",
+                            },
+                        },
+                        {"type": "text", "text": "请分析这张图片。"},
+                    ],
+                },
+            ],
+        )
+        return response.choices[0].message.content
+
+    def analyze_scene(self, image_base64: str) -> str:
+        return self._call(SCENE_SYSTEM_PROMPT, image_base64)
+
+    def detect_objects(self, image_base64: str) -> str:
+        return self._call(OBJECT_DETECTION_PROMPT, image_base64)
+
+
 class MockProvider:
     SCENES = [
         {"scene": "outdoor_urban", "weather": "sunny", "lighting": "bright"},
@@ -168,6 +205,9 @@ def _create_provider():
     elif provider_name == "gemini" and settings.GEMINI_API_KEY:
         logger.info("Using Gemini provider")
         return GeminiProvider()
+    elif provider_name == "qwen" and settings.QWEN_API_KEY:
+        logger.info("Using Qwen provider")
+        return QwenProvider()
     else:
         if provider_name != "mock":
             logger.warning("Provider '%s' not available, falling back to mock", provider_name)
