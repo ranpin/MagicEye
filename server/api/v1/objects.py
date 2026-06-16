@@ -20,5 +20,5 @@ async def detect_objects(request: ImageRequest):
         return DetectResponse(objects=[], imageWidth=0, imageHeight=0)
 
     logger.info("Detecting objects in image %dx%d", w, h)
-    result = claude_vision.detect_objects(processed_b64, image_width=w, image_height=h)
+    result = await claude_vision.detect_objects(processed_b64, image_width=w, image_height=h)
     return result

@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import json
 import logging
@@ -107,8 +108,10 @@ class GeminiProvider:
             model=settings.GEMINI_MODEL,
             contents=[
                 types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
-                system_prompt,
             ],
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt
+            )
         )
         return response.text
 
@@ -226,9 +229,9 @@ def _create_provider():
 _provider = _create_provider()
 
 
-def analyze_scene(image_base64: str) -> dict:
+async def analyze_scene(image_base64: str) -> dict:
     try:
-        raw = _provider.analyze_scene(image_base64)
+        raw = await asyncio.to_thread(_provider.analyze_scene, image_base64)
         result = _extract_json(raw)
         return {
             "scene": result.get("scene", "unknown"),
@@ -241,9 +244,9 @@ def analyze_scene(image_base64: str) -> dict:
         return {"scene": "unknown", "weather": "unknown", "lighting": "unknown", "dynamicElements": []}
 
 
-def detect_objects(image_base64: str, image_width: int, image_height: int) -> dict:
+async def detect_objects(image_base64: str, image_width: int, image_height: int) -> dict:
     try:
-        raw = _provider.detect_objects(image_base64)
+        raw = await asyncio.to_thread(_provider.detect_objects, image_base64)
         result = _extract_json(raw)
         raw_objects = result.get("objects", [])
 

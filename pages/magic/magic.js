@@ -54,6 +54,7 @@ Page({
   _frameListener: null,
   _cameraFrameBuffer: null,
   _cameraOffscreen: null,
+  _cameraImageData: null,
   _lastFrameTime: 0,
   _destroyed: false,
 
@@ -67,6 +68,7 @@ Page({
   _effectCrop: null,
   _effectStartTime: 0,
   _effectDuration: 5000,
+  _effectClearTimer: null,
 
   onLoad() {
     const sys = wx.getSystemInfoSync()
@@ -292,6 +294,18 @@ Page({
           count++
           this.setData({ recordFrameCount: count })
           this._consumeEnergy(1)
+
+          // Stop recording if energy is depleted
+          if (this.data.energyPercent <= 0) {
+            this._showToast('魔力耗尽！')
+            if (!this._reversePlaying) {
+              this._reversePlaying = true
+              this._stopRecording()
+              this._playReverse()
+            }
+            return
+          }
+
           this._recordTimer = setTimeout(capture, 100)
         },
         fail: () => {
@@ -349,11 +363,6 @@ Page({
         return
       }
 
-      // 同时预加载下一帧
-      const nextPromise = this._reverseIndex + 1 < frames.length
-        ? preloadImage(frames[this._reverseIndex + 1])
-        : Promise.resolve(null)
-
       if (this._canvasCtx) {
         this._canvasCtx.clearRect(0, 0, this.data.screenWidth, this.data.screenHeight)
         this._canvasCtx.drawImage(
@@ -363,7 +372,6 @@ Page({
       }
 
       this._reverseIndex++
-      await nextPromise // 等待预加载完成再切帧
       this._reverseTimer = setTimeout(playNext, 80)
     }
 
@@ -686,12 +694,16 @@ Page({
     this._startAnimation()
 
     // 5 秒后自动清除效果
+    if (this._effectClearTimer) {
+      clearTimeout(this._effectClearTimer)
+    }
     this._effectStartTime = Date.now()
     this._effectDuration = 5000
-    setTimeout(() => {
+    this._effectClearTimer = setTimeout(() => {
       this._particleSystem && this._particleSystem.setMode('idle')
       this._effectImage = null
       this._effectCrop = null
+      this._effectClearTimer = null
     }, this._effectDuration)
 
     this._generateAIEffect(effect)
@@ -778,13 +790,13 @@ Page({
     this._canvasCtx.save()
     this._canvasCtx.globalAlpha = alpha
     // effectImage is already cropped server-side to bbox+padding region,
-    // so draw the entire image at the crop position mapped to screen space
+    // so draw the entire image (source: 0,0,imgW,imgH) at the crop position mapped to screen space
+    const imgW = this._effectImage.width
+    const imgH = this._effectImage.height
     this._canvasCtx.drawImage(
       this._effectImage,
-      cropX * sx,
-      cropY * sy,
-      cropW * sx,
-      cropH * sy
+      0, 0, imgW, imgH,
+      cropX * sx, cropY * sy, cropW * sx, cropH * sy
     )
     this._canvasCtx.restore()
   },
@@ -952,19 +964,31 @@ Page({
           width: frame.width,
           height: frame.height
         })
+        this._cameraImageData = null
       }
 
       const offCtx = this._cameraOffscreen.getContext('2d')
-      const imgData = offCtx.createImageData(frame.width, frame.height)
-      imgData.data.set(new Uint8ClampedArray(frame.data))
-      offCtx.putImageData(imgData, 0, 0)
+      if (!this._cameraImageData) {
+        this._cameraImageData = offCtx.createImageData(frame.width, frame.height)
+      }
+      this._cameraImageData.data.set(new Uint8ClampedArray(frame.data))
+      offCtx.putImageData(this._cameraImageData, 0, 0)
+
+      // Calculate cover scaling to maintain aspect ratio
+      const fw = frame.width
+      const fh = frame.height
+      const sw = this.data.screenWidth
+      const sh = this.data.screenHeight
+      const scale = Math.max(sw / fw, sh / fh)
+      const dw = fw * scale
+      const dh = fh * scale
+      const dx = (sw - dw) / 2
+      const dy = (sh - dh) / 2
 
       ctx.drawImage(
         this._cameraOffscreen,
-        0, 0, frame.width, frame.height,
-        0, 0,
-        this.data.screenWidth,
-        this.data.screenHeight
+        0, 0, fw, fh,
+        dx, dy, dw, dh
       )
     } catch (e) {
       // createOffscreenCanvas or putImageData not supported — camera preview unavailable
@@ -1003,6 +1027,10 @@ Page({
     if (this._reverseTimer) {
       clearTimeout(this._reverseTimer)
       this._reverseTimer = null
+    }
+    if (this._effectClearTimer) {
+      clearTimeout(this._effectClearTimer)
+      this._effectClearTimer = null
     }
     this._particleSystem && this._particleSystem.setMode('idle')
 
