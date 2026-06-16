@@ -25,17 +25,21 @@ MagicEye 是一款基于微信小程序的增强现实魔法交互工具。通�
 ## 技术架构
 
 ```
-小程序前端                    云端 AI 服务 (Phase 2)
-┌─────────────┐              ┌──────────────┐
-│ Camera 采集  │ ──WebSocket──▶│ 场景理解      │
-│ 触控/滑动    │              │ 物体检测      │
-│ Canvas 渲染  │◀──────────────│ 运动估计      │
-│ 粒子特效     │              │ 图像生成      │
-└─────────────┘              └──────────────┘
+小程序前端                        FastAPI 后端 (localhost:8000)
+┌────────────────┐              ┌──────────────────────┐
+│ Camera 采集     │              │ /scene/analyze       │
+│ 触控/滑动       │──POST JSON──▶│  → Claude Vision     │
+│ imageUtil       │              │                      │
+│ Canvas 渲染     │              │ /objects/detect       │
+│ 粒子特效        │◀──JSON───────│  → Claude Vision     │
+│                │              │                      │
+│ 效果叠加        │◀──base64 PNG─│ /effect/generate     │
+│                │              │  → PIL 程序化渲染      │
+└────────────────┘              └──────────────────────┘
 ```
 
 - **端侧**: 微信小程序 Camera API + Canvas 2D 实时渲染 + 粒子系统
-- **云端**: 多模态大模型场景理解 + 扩散模型图像生成 (Phase 2)
+- **云端**: FastAPI + Claude Vision 场景理解 + PIL 效果渲染 + OpenCV 运动估计
 
 ## 开发
 
@@ -46,11 +50,27 @@ MagicEye 是一款基于微信小程序的增强现实魔法交互工具。通�
 
 ### 快速开始
 
-1. 克隆仓库
-2. 打开微信开发者工具
-3. 导入项目，选择 `MagicEye` 目录
-4. AppID 可留空（使用测试号）或填入你的小程序 AppID
+#### 1. 启动后端服务
+
+```bash
+cd server
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+# 编辑 .env，填入 ANTHROPIC_API_KEY
+python -m uvicorn server.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+#### 2. 启动小程序
+
+1. 打开微信开发者工具
+2. 导入项目，选择 `MagicEye` 目录
+3. AppID 可留空（使用测试号）或填入你的小程序 AppID
+4. 设置 → 勾选「不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书」
 5. 编译运行
+6. 进入小程序 → 设置页 → 填入 AI 服务地址（如 `http://192.168.1.x:8000`）
+7. 点击「测试连接」验证
 
 ### 项目结构
 
@@ -64,10 +84,18 @@ MagicEye/
 │   ├── index/                   # 欢迎页（星空粒子动画 + 功能卡片）
 │   ├── tutorial/                # 3步交互式新手引导
 │   ├── magic/                   # 核心魔法体验页
-│   └── settings/                # 设置页
+│   └── settings/                # 设置页（含开发者 API 配置）
 ├── utils/
 │   ├── effects.js               # 粒子系统 + 冻结/倒流/爆发特效渲染
-│   └── api.js                   # 云端 AI 服务客户端（含 Mock）
+│   ├── api.js                   # 云端 AI 服务客户端（可配置 URL）
+│   └── imageUtil.js             # 临时文件 ↔ base64 转换工具
+├── server/                      # Python FastAPI 后端
+│   ├── main.py                  # FastAPI 入口
+│   ├── config.py                # 配置管理
+│   ├── api/v1/                  # 4 个 API 端点
+│   ├── services/                # Claude Vision + 效果渲染 + 运动估计
+│   ├── models/schemas.py        # Pydantic 请求/响应模型
+│   └── utils/image.py           # 图片处理工具
 ├── PRD.md                       # 产品需求文档
 └── README.md
 ```
@@ -83,8 +111,8 @@ MagicEye/
 ## 开发路线
 
 - [x] **Phase 1**: 基础框架 + 冻结/倒流/触碰核心交互
-- [ ] **Phase 2**: 云端 AI 接入（场景理解、物体检测、运动估计）→ [Issues #1](https://github.com/ranpin/MagicEye/issues/1), [#2](https://github.com/ranpin/MagicEye/issues/2)
-- [ ] **Phase 3**: 完整魔法效果（AI 图像生成、材质变换）→ [Issue #3](https://github.com/ranpin/MagicEye/issues/3)
+- [x] **Phase 2**: 云端 AI 接入（Claude Vision 场景理解 + 物体检测）
+- [x] **Phase 3**: 完整魔法效果（PIL 效果渲染 + 端到端集成）
 - [ ] **Phase 4**: 体验打磨（手势识别、音效）→ [Issues #4](https://github.com/ranpin/MagicEye/issues/4), [#5](https://github.com/ranpin/MagicEye/issues/5)
 
 查看所有 [Issues](https://github.com/ranpin/MagicEye/issues) 了解详细的待办事项。

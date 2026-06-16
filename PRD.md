@@ -219,24 +219,25 @@ MVP 聚焦两个核心魔法效果，验证"魔法交互"体验是否成立。
 - [x] 基础交互（按钮 + 滑动手势，替代复杂手势识别）
 - [x] 全屏冻结特效（Canvas + 冰晶粒子 + 霜纹）
 
-### Phase 2: 云端 AI 接入（第 3-4 周）
-- [ ] 云端场景理解服务搭建 [#1](https://github.com/ranpin/MagicEye/issues/1)
-- [ ] 物体检测和分割 API [#2](https://github.com/ranpin/MagicEye/issues/2)
-- [ ] 运动估计模块
+### Phase 2: 云端 AI 接入（第 3-4 周） ✅ 已完成
+- [x] 云端场景理解服务（Claude Vision） [#1](https://github.com/ranpin/MagicEye/issues/1)
+- [x] 物体检测 API（Claude Vision） [#2](https://github.com/ranpin/MagicEye/issues/2)
+- [x] 运动估计模块（OpenCV 光流）
 - [ ] WebSocket 实时通信
 
-### Phase 3: 魔法效果实现（第 5-7 周）
+### Phase 3: 魔法效果实现（第 5-7 周） ✅ 已完成
 - [x] 时间冻结 - 完整效果（含冰晶粒子 + 霜纹 + 角花）
 - [x] 时间倒流 - 帧缓存 + 反向播放（含预加载优化）
-- [ ] 点石成金 - AI 物体检测 + 材质变换 [#3](https://github.com/ranpin/MagicEye/issues/3)
+- [x] 点石成金 - AI 物体检测 + 材质变换 [#3](https://github.com/ranpin/MagicEye/issues/3)
 - [x] 魔法选项环 UI（含动画和脉冲效果）
+- [x] 端到端集成 - FastAPI 后端 + 前端 AI 对接
 
 ### Phase 4: 体验打磨（第 8 周）
 - [x] 引导教程（3 步交互式教程 + 动画演示）
 - [ ] 音效反馈 [#5](https://github.com/ranpin/MagicEye/issues/5)
 - [x] 振动反馈（支持设置页开关）
 - [x] 拍照/录制功能
-- [x] 设置页面
+- [x] 设置页面（含开发者 API 配置）
 - [ ] 真实手势识别 [#4](https://github.com/ranpin/MagicEye/issues/4)
 - [ ] 性能优化 [#6](https://github.com/ranpin/MagicEye/issues/6)
 
