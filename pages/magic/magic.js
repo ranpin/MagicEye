@@ -252,35 +252,49 @@ Page({
     this._showToast('时间倒流！')
     this._vibrate('heavy')
 
-    // 用 canvas 逐帧绘制倒放画面
     this._reverseIndex = 0
     this._particleSystem.setMode('reverse')
     this._startAnimation()
 
-    const playNext = () => {
+    // 预加载下一帧以减少闪烁
+    const preloadImage = (src) => {
+      return new Promise((resolve) => {
+        const img = this._canvas.createImage()
+        img.onload = () => resolve(img)
+        img.onerror = () => resolve(null)
+        img.src = src
+      })
+    }
+
+    const playNext = async () => {
       if (this._reverseIndex >= frames.length) {
         this._exitReverse()
         return
       }
 
-      const img = this._canvas.createImage()
-      img.onload = () => {
-        if (this._canvasCtx) {
-          this._canvasCtx.clearRect(
-            0, 0,
-            this.data.screenWidth,
-            this.data.screenHeight
-          )
-          this._canvasCtx.drawImage(
-            img, 0, 0,
-            this.data.screenWidth,
-            this.data.screenHeight
-          )
-        }
+      const currentImg = await preloadImage(frames[this._reverseIndex])
+      if (!currentImg) {
         this._reverseIndex++
         this._reverseTimer = setTimeout(playNext, 100)
+        return
       }
-      img.src = frames[this._reverseIndex]
+
+      // 同时预加载下一帧
+      const nextPromise = this._reverseIndex + 1 < frames.length
+        ? preloadImage(frames[this._reverseIndex + 1])
+        : Promise.resolve(null)
+
+      if (this._canvasCtx) {
+        this._canvasCtx.clearRect(0, 0, this.data.screenWidth, this.data.screenHeight)
+        this._canvasCtx.drawImage(
+          currentImg, 0, 0,
+          this.data.screenWidth, this.data.screenHeight
+        )
+      }
+
+      this._reverseIndex++
+      await nextPromise // 等待预加载完成再切帧
+      this._reverseTimer = setTimeout(playNext, 80)
     }
 
     playNext()
@@ -341,27 +355,108 @@ Page({
   },
 
   onCanvasTouchStart(e) {
-    if (this.data.currentMode !== 'touch') return
-
     const touch = e.touches[0]
     this._touchStartPos = { x: touch.clientX, y: touch.clientY }
     this._touchStartTime = Date.now()
+    this._touchMoved = false
   },
 
-  onCanvasTouchMove() {
-    // 预留：拖拽魔法效果
+  onCanvasTouchMove(e) {
+    if (!this._touchStartPos) return
+    const touch = e.touches[0]
+    const dx = touch.clientX - this._touchStartPos.x
+    const dy = touch.clientY - this._touchStartPos.y
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+      this._touchMoved = true
+    }
   },
 
   onCanvasTouchEnd(e) {
-    if (this.data.currentMode !== 'touch') return
     if (!this._touchStartPos) return
 
     const elapsed = Date.now() - this._touchStartTime
-    // 短按（< 300ms）视为点击 → 显示魔法环
-    if (elapsed < 300) {
+    const touch = e.changedTouches[0]
+    const dx = touch.clientX - this._touchStartPos.x
+    const dy = touch.clientY - this._touchStartPos.y
+
+    // 滑动手势检测（距离 > 60px，时间 < 500ms）
+    if (elapsed < 500) {
+      const absDx = Math.abs(dx)
+      const absDy = Math.abs(dy)
+
+      if (absDx > 60 && absDx > absDy * 1.5) {
+        // 水平滑动
+        if (dx > 0) {
+          this._onSwipeRight()
+        } else {
+          this._onSwipeLeft()
+        }
+        this._touchStartPos = null
+        return
+      }
+
+      if (absDy > 60 && absDy > absDx * 1.5 && dy < 0) {
+        // 上滑 - 快速冻结
+        this._onSwipeUp()
+        this._touchStartPos = null
+        return
+      }
+    }
+
+    // 非滑动 → 触碰模式的点击
+    if (this.data.currentMode === 'touch' && !this._touchMoved && elapsed < 300) {
       this._showMagicRing(this._touchStartPos.x, this._touchStartPos.y)
     }
+
     this._touchStartPos = null
+  },
+
+  _onSwipeRight() {
+    // 右滑：循环切换魔法模式 (none → freeze → reverse → touch → none)
+    const modes = ['', 'freeze', 'reverse', 'touch']
+    const modeActions = {
+      '': () => this._exitAllModes(),
+      'freeze': () => this.onFreezeTap(),
+      'reverse': () => this._showToast('长按 ⏪ 按钮使用倒流'),
+      'touch': () => this.onTouchModeTap()
+    }
+
+    const currentIdx = modes.indexOf(this.data.currentMode)
+    const nextIdx = (currentIdx + 1) % modes.length
+    const nextMode = modes[nextIdx]
+
+    if (nextMode === '') {
+      this._exitAllModes()
+      this.setData({ hintText: '选择下方的魔法，开始施法' })
+    } else if (nextMode === 'reverse') {
+      // 倒流需要长按，提示用户
+      this._showToast('↗ 右滑切换 | 倒流需长按')
+    } else {
+      this._exitAllModes()
+      if (nextMode === 'freeze') this.onFreezeTap()
+      if (nextMode === 'touch') this.onTouchModeTap()
+    }
+
+    this._vibrate('light')
+  },
+
+  _onSwipeLeft() {
+    // 左滑：取消当前模式
+    if (this.data.currentMode) {
+      this._exitAllModes()
+      this.setData({ hintText: '选择下方的魔法，开始施法' })
+      this._vibrate('light')
+      this._showToast('已取消魔法')
+    }
+  },
+
+  _onSwipeUp() {
+    // 上滑：快速冻结
+    if (this.data.currentMode !== 'freeze') {
+      this._exitAllModes()
+      this.onFreezeTap()
+      this._showToast('⬆ 上滑快速冻结')
+    }
   },
 
   _showMagicRing(x, y) {
