@@ -118,21 +118,23 @@ class MagicEyeAPI {
                   id: 1,
                   label: '汽车',
                   confidence: 0.95,
-                  bbox: { x: 50, y: 200, w: 150, h: 100 }
+                  bbox: { x: 50, y: 300, w: 150, h: 100 }
                 },
                 {
                   id: 2,
                   label: '树木',
                   confidence: 0.88,
-                  bbox: { x: 250, y: 100, w: 80, h: 200 }
+                  bbox: { x: 250, y: 150, w: 80, h: 200 }
                 },
                 {
                   id: 3,
                   label: '行人',
                   confidence: 0.92,
-                  bbox: { x: 180, y: 180, w: 40, h: 120 }
+                  bbox: { x: 160, y: 280, w: 50, h: 120 }
                 }
-              ]
+              ],
+              imageWidth: 375,
+              imageHeight: 667
             })
             break
 
@@ -140,7 +142,11 @@ class MagicEyeAPI {
             resolve({
               effectImage: '',
               mask: '',
-              status: 'success'
+              status: 'success',
+              cropX: 0,
+              cropY: 0,
+              cropW: 375,
+              cropH: 667
             })
             break
 

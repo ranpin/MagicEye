@@ -157,10 +157,31 @@ RENDERERS = {
 }
 
 
-def render_effect(image_base64: str, bbox: dict, effect: str) -> str:
+def render_effect(image_base64: str, bbox: dict, effect: str) -> dict:
     from server.utils.image import decode_base64_image, encode_image_base64
 
     img = decode_base64_image(image_base64)
+    iw, ih = img.size
+
+    x, y, w, h = int(bbox["x"]), int(bbox["y"]), int(bbox["w"]), int(bbox["h"])
+
+    pad_x = max(30, int(w * 0.3))
+    pad_y = max(30, int(h * 0.3))
+    cx1 = max(0, x - pad_x)
+    cy1 = max(0, y - pad_y)
+    cx2 = min(iw, x + w + pad_x)
+    cy2 = min(ih, y + h + pad_y)
+
+    cropped = img.crop((cx1, cy1, cx2, cy2))
+    local_bbox = {"x": x - cx1, "y": y - cy1, "w": w, "h": h}
+
     renderer = RENDERERS.get(effect, render_gold)
-    result = renderer(img, bbox)
-    return encode_image_base64(result, fmt="PNG")
+    result = renderer(cropped, local_bbox)
+
+    return {
+        "effectImage": encode_image_base64(result, fmt="JPEG"),
+        "cropX": cx1,
+        "cropY": cy1,
+        "cropW": cx2 - cx1,
+        "cropH": cy2 - cy1,
+    }

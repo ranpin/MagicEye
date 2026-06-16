@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter
 
 from server.models.schemas import ImageRequest, DetectResponse
-from server.services.claude_vision import claude_vision
+from server.services import claude_vision
 from server.utils.image import preprocess_image
 
 logger = logging.getLogger(__name__)

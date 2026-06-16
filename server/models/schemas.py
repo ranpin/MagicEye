@@ -44,12 +44,18 @@ class DetectedObject(BaseModel):
 
 class DetectResponse(BaseModel):
     objects: list[DetectedObject] = []
+    imageWidth: int = 0
+    imageHeight: int = 0
 
 
 class EffectResponse(BaseModel):
     effectImage: str = ""
     mask: str = ""
     status: str = "success"
+    cropX: float = 0
+    cropY: float = 0
+    cropW: float = 0
+    cropH: float = 0
 
 
 class MotionInfo(BaseModel):

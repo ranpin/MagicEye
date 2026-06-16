@@ -17,12 +17,20 @@ async def generate_effect(request: EffectRequest):
         request.effect, request.bbox.x, request.bbox.y, request.bbox.w, request.bbox.h,
     )
     try:
-        effect_b64 = render_effect(
+        result = render_effect(
             request.imageBase64,
             request.bbox.model_dump(),
             request.effect,
         )
-        return EffectResponse(effectImage=effect_b64, mask="", status="fast")
+        return EffectResponse(
+            effectImage=result["effectImage"],
+            mask="",
+            status="fast",
+            cropX=result["cropX"],
+            cropY=result["cropY"],
+            cropW=result["cropW"],
+            cropH=result["cropH"],
+        )
     except Exception as e:
         logger.error("Effect generation failed: %s", e)
         return EffectResponse(effectImage="", mask="", status="error")

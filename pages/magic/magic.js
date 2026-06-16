@@ -39,6 +39,7 @@ Page({
   _particleSystem: null,
   _freezeFrame: null,
   _freezeFrameBase64: null,
+  _freezeImage: null,
   _frameBuffer: [],
   _reverseTimer: null,
   _reverseIndex: 0,
@@ -50,9 +51,11 @@ Page({
   // ---- API 集成状态 ----
   _detectedObjects: [],
   _currentFrameBase64: null,
+  _currentImageWidth: 0,
+  _currentImageHeight: 0,
   _selectedObject: null,
   _effectImage: null,
-  _effectBbox: null,
+  _effectCrop: null,
   _effectStartTime: 0,
   _effectDuration: 5000,
 
@@ -161,7 +164,9 @@ Page({
       this._showToast('时间已冻结！')
 
       // 冻结粒子效果
-      this._particleSystem.setMode('freeze')
+      if (this._particleSystem) {
+        this._particleSystem.setMode('freeze')
+      }
       this._startAnimation()
 
       // 异步分析场景（非阻塞）
@@ -179,7 +184,7 @@ Page({
 
   _exitFreeze() {
     this._stopAnimation()
-    this._particleSystem.setMode('idle')
+    this._particleSystem && this._particleSystem.setMode('idle')
 
     this.setData({
       currentMode: '',
@@ -282,7 +287,7 @@ Page({
     this._vibrate('heavy')
 
     this._reverseIndex = 0
-    this._particleSystem.setMode('reverse')
+    this._particleSystem && this._particleSystem.setMode('reverse')
     this._startAnimation()
 
     // 预加载下一帧以减少闪烁
@@ -336,7 +341,7 @@ Page({
       this._reverseTimer = null
     }
 
-    this._particleSystem.setMode('idle')
+    this._particleSystem && this._particleSystem.setMode('idle')
     this._frameBuffer = []
 
     if (this._canvasCtx) {
@@ -385,6 +390,8 @@ Page({
 
           const result = await api.detectObjects(base64)
           this._detectedObjects = result.objects || []
+          this._currentImageWidth = result.imageWidth || 0
+          this._currentImageHeight = result.imageHeight || 0
 
           const count = this._detectedObjects.length
           if (count > 0) {
@@ -434,9 +441,11 @@ Page({
   _exitTouch() {
     this._detectedObjects = []
     this._currentFrameBase64 = null
+    this._currentImageWidth = 0
+    this._currentImageHeight = 0
     this._selectedObject = null
     this._effectImage = null
-    this._effectBbox = null
+    this._effectCrop = null
 
     if (this._canvasCtx && this._canvas) {
       this._canvasCtx.clearRect(0, 0, this.data.screenWidth, this.data.screenHeight)
@@ -575,7 +584,7 @@ Page({
 
     this._vibrate('medium')
 
-    if (this._canvasCtx) {
+    if (this._canvasCtx && this._particleSystem) {
       this._particleSystem.emitBurst(clampedX, clampedY, 20, '#FFD700')
       this._startAnimation()
     }
@@ -641,22 +650,24 @@ Page({
       sparkle: '#FFFFFF'
     }
 
-    this._particleSystem.setMode('effect')
-    this._particleSystem.emitBurst(
-      this.data.ringX,
-      this.data.ringY,
-      40,
-      effectColors[effect] || '#FFD700'
-    )
+    if (this._particleSystem) {
+      this._particleSystem.setMode('effect')
+      this._particleSystem.emitBurst(
+        this.data.ringX,
+        this.data.ringY,
+        40,
+        effectColors[effect] || '#FFD700'
+      )
+    }
     this._startAnimation()
 
     // 5 秒后自动清除效果
     this._effectStartTime = Date.now()
     this._effectDuration = 5000
     setTimeout(() => {
-      this._particleSystem.setMode('idle')
+      this._particleSystem && this._particleSystem.setMode('idle')
       this._effectImage = null
-      this._effectBbox = null
+      this._effectCrop = null
       if (this._canvasCtx) {
         this._canvasCtx.clearRect(
           0, 0,
@@ -673,22 +684,27 @@ Page({
   _generateAIEffect(effect) {
     if (!this._currentFrameBase64) return
 
-    let bbox
+    let imageBbox
+    const iw = this._currentImageWidth || this.data.screenWidth
+    const ih = this._currentImageHeight || this.data.screenHeight
+    const sx = iw / this.data.screenWidth
+    const sy = ih / this.data.screenHeight
+
     if (this._selectedObject) {
-      bbox = this._selectedObject.bbox
+      imageBbox = this._selectedObject.bbox
     } else {
       const size = 120
-      bbox = {
-        x: Math.max(0, this.data.ringX - size / 2),
-        y: Math.max(0, this.data.ringY - size / 2),
-        w: size,
-        h: size
+      imageBbox = {
+        x: Math.max(0, (this.data.ringX - size / 2) * sx),
+        y: Math.max(0, (this.data.ringY - size / 2) * sy),
+        w: size * sx,
+        h: size * sy
       }
     }
 
     api.generateEffect({
       imageBase64: this._currentFrameBase64,
-      bbox: bbox,
+      bbox: imageBbox,
       effect: effect
     }).then(async (result) => {
       if (result && result.effectImage && result.status !== 'error') {
@@ -704,7 +720,12 @@ Page({
           })
 
           this._effectImage = img
-          this._effectBbox = bbox
+          this._effectCrop = {
+            cropX: result.cropX || 0,
+            cropY: result.cropY || 0,
+            cropW: result.cropW || imageBbox.w,
+            cropH: result.cropH || imageBbox.h
+          }
         } catch (err) {
           console.error('Failed to render effect image:', err)
         }
@@ -715,12 +736,12 @@ Page({
   },
 
   _renderEffectOnCanvas() {
-    if (!this._effectImage || !this._effectBbox || !this._canvasCtx) return
+    if (!this._effectImage || !this._effectCrop || !this._canvasCtx) return
 
     const elapsed = Date.now() - this._effectStartTime
     if (elapsed > this._effectDuration) {
       this._effectImage = null
-      this._effectBbox = null
+      this._effectCrop = null
       return
     }
 
@@ -731,17 +752,21 @@ Page({
       : 1
     const alpha = fadeIn * fadeOut * 0.85
 
-    const scaleX = this.data.screenWidth / (this._currentImageWidth || this.data.screenWidth)
-    const scaleY = this.data.screenHeight / (this._currentImageHeight || this.data.screenHeight)
+    const iw = this._currentImageWidth || this.data.screenWidth
+    const ih = this._currentImageHeight || this.data.screenHeight
+    const sx = this.data.screenWidth / iw
+    const sy = this.data.screenHeight / ih
+
+    const { cropX, cropY, cropW, cropH } = this._effectCrop
 
     this._canvasCtx.save()
     this._canvasCtx.globalAlpha = alpha
     this._canvasCtx.drawImage(
       this._effectImage,
-      this._effectBbox.x * scaleX,
-      this._effectBbox.y * scaleY,
-      this._effectBbox.w * scaleX,
-      this._effectBbox.h * scaleY
+      cropX * sx,
+      cropY * sy,
+      cropW * sx,
+      cropH * sy
     )
     this._canvasCtx.restore()
   },
@@ -835,6 +860,7 @@ Page({
         if (this._canvas && this._canvasCtx) {
           const img = this._canvas.createImage()
           img.onload = () => {
+            this._freezeImage = img
             this._canvasCtx.drawImage(
               img, 0, 0,
               this.data.screenWidth,
@@ -865,27 +891,23 @@ Page({
         this.data.screenHeight
       )
 
-      // 如果是冻结模式，先绘制冻结帧
-      if (this.data.freezeActive && this._freezeFrame) {
-        const img = this._canvas.createImage()
-        img.onload = () => {
-          this._canvasCtx.globalAlpha = 0.85
-          this._canvasCtx.drawImage(
-            img, 0, 0,
-            this.data.screenWidth,
-            this.data.screenHeight
-          )
-          this._canvasCtx.globalAlpha = 1.0
-          this._particleSystem.update()
-          this._particleSystem.draw()
-          this._renderEffectOnCanvas()
-        }
-        img.src = this._freezeFrame
-      } else {
-        this._particleSystem.update()
-        this._particleSystem.draw()
-        this._renderEffectOnCanvas()
+      if (this.data.freezeActive && this._freezeImage) {
+        this._canvasCtx.globalAlpha = 0.85
+        this._canvasCtx.drawImage(
+          this._freezeImage, 0, 0,
+          this.data.screenWidth,
+          this.data.screenHeight
+        )
+        this._canvasCtx.globalAlpha = 1.0
       }
+
+      if (this.data.currentMode === 'touch' && this._detectedObjects.length > 0) {
+        this._drawDetectionHighlights()
+      }
+
+      this._particleSystem && this._particleSystem.update()
+      this._particleSystem && this._particleSystem.draw()
+      this._renderEffectOnCanvas()
 
       this._animTimer = this._canvas.requestAnimationFrame(animate)
     }
@@ -931,10 +953,13 @@ Page({
 
     this._detectedObjects = []
     this._currentFrameBase64 = null
+    this._currentImageWidth = 0
+    this._currentImageHeight = 0
     this._selectedObject = null
     this._effectImage = null
-    this._effectBbox = null
+    this._effectCrop = null
     this._freezeFrameBase64 = null
+    this._freezeImage = null
 
     if (this._canvasCtx) {
       this._canvasCtx.clearRect(
