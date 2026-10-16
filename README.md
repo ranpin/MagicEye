@@ -39,7 +39,7 @@ MagicEye 是一款基于微信小程序的增强现实魔法交互工具。通�
 ```
 
 - **端侧**: 微信小程序 Camera API + Canvas 2D 实时渲染 + 粒子系统
-- **云端**: FastAPI + Claude Vision 场景理解 + PIL 效果渲染 + OpenCV 运动估计
+- **云端**: FastAPI + VLM 场景理解（Anthropic Claude / Gemini / Qwen 三选一，默认 mock 免密钥）+ PIL 效果渲染 + OpenCV 运动估计
 
 ## 开发
 
@@ -58,7 +58,8 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# 编辑 .env，填入 ANTHROPIC_API_KEY
+# 编辑 .env：AI_PROVIDER 选 anthropic / gemini / qwen 并填对应 Key（默认 mock，无需 Key 即可跑通）
+cd ..   # uvicorn 需在仓库根目录启动，server 才是可导入的包
 python -m uvicorn server.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
